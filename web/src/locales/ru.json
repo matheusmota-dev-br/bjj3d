@@ -145,5 +145,14 @@
   "beltBlue": "Синий",
   "beltPurple": "Фиолетовый",
   "beltBrown": "Коричневый",
-  "beltBlack": "Чёрный"
+  "beltBlack": "Чёрный",
+  "camDirected": "Авто",
+  "nextShort": "далее",
+  "moreMoves": "ещё {n}",
+  "optImpact": "Момент приёма",
+  "optImpactHint": "Замедляет и приближает, когда рычаг входит в опасную зону.",
+  "endsAt": "заканчивается в",
+  "startsAt": "начинается в",
+  "optOss": "Oss! в начале",
+  "optOssHint": "Большое Oss! с пульсом перед началом новой схватки."
 }

@@ -19,13 +19,13 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string,
 
 // --- settings kept per viewer (they only make the page nicer; it works without them)
 
-type Camera = "free" | "side" | "top" | "eyes";
+type Camera = "directed" | "free" | "side" | "top" | "eyes";
 const SETTINGS_KEY = "bjj-3d.settings.v2";
 const prefersDark = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
 const settings = {
   lang: "pt-BR", theme: (prefersDark ? "dark" : "light") as Theme, place: "mat" as Place,
-  look: "solid" as Look, camera: "free" as Camera, eyesOf: "1", speed: 1, show: "both",
-  loop: false, mirror: false, degrees: false, bands: false, helpSeen: false,
+  look: "solid" as Look, camera: "directed" as Camera, eyesOf: "1", speed: 1, show: "both",
+  loop: false, mirror: false, degrees: false, impact: true, oss: true, helpSeen: false,
   fighters: [] as Partial<Style>[],
 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}")); } catch { /* private mode */ }
@@ -41,7 +41,7 @@ const viewer = new Viewer($<HTMLCanvasElement>("#view"));
 const db = await Db.load(query.get("graph") ?? "graph.json");
 const file = db.file;
 
-// --- floating settings bar
+// --- the settings popover (⚙) and the camera chip
 
 /** A row of buttons where one is chosen. */
 function segmented<V extends string | number>(root: HTMLElement, items: [V, string][], get: () => V, set: (v: V) => void) {
@@ -54,56 +54,36 @@ function segmented<V extends string | number>(root: HTMLElement, items: [V, stri
   return () => buttons.forEach(([v, b]) => b.setAttribute("aria-pressed", String(v === get())));
 }
 
-/** Popovers close when clicking anywhere else. */
-const popovers: { panel: HTMLElement; button: HTMLElement }[] = [];
-function openPopover(panel: HTMLElement, button: HTMLElement, open: boolean) {
-  for (const p of popovers) if (p.panel !== panel) { p.panel.hidden = true; p.button.setAttribute("aria-expanded", "false"); }
-  panel.hidden = !open;
-  button.setAttribute("aria-expanded", String(open));
-}
+const refreshers: (() => void)[] = [];
+const looks: [Look, string][] = [["solid", t("lookSolid")], ["wood", t("lookWood")], ["hologram", t("lookHologram")]];
+// Older saved settings may name a look or camera that no longer exists.
+if (!looks.some(([l]) => l === settings.look)) settings.look = "solid";
+if (!["directed", "free", "side", "top", "eyes"].includes(settings.camera)) settings.camera = "directed";
+$("#look-label").textContent = t("look");
+$("#place-label").textContent = t("environment");
+$("#camera-label").textContent = t("camera");
+$("#speed-label").textContent = t("speed");
+refreshers.push(segmented($("#look"), looks, () => settings.look, (v) => (settings.look = v)));
+const places: [Place, string][] = [["mat", t("envMat")], ["gym", t("envGym")], ["studio", t("envStudio")], ["night", t("envNight")]];
+refreshers.push(segmented($("#place"), places, () => settings.place, (v) => (settings.place = v)));
+const cameras: [Camera, string][] = [["directed", t("camDirected")], ["free", t("camFree")], ["side", t("camSide")], ["top", t("camTop")], ["eyes", t("camEyes")]];
+refreshers.push(segmented($("#camera"), cameras, () => settings.camera, (v) => (settings.camera = v)));
+// The two everyday cameras stay on screen; the others live in the settings.
+refreshers.push(segmented($("#camchip"), cameras.slice(0, 2), () => settings.camera, (v) => (settings.camera = v)));
+refreshers.push(segmented($("#speed"), [[0.25, "¼×"], [0.5, "½×"], [1, "1×"]], () => settings.speed, (v) => (settings.speed = v)));
+
+const settingsBtn = $<HTMLButtonElement>("#settings-btn");
+const settingsPanel = $("#settings");
+settingsBtn.textContent = "⚙";
+settingsBtn.title = t("settings");
+settingsBtn.onclick = () => { settingsPanel.hidden = !settingsPanel.hidden; settingsBtn.setAttribute("aria-expanded", String(!settingsPanel.hidden)); };
 addEventListener("click", (e) => {
-  for (const p of popovers) if (!p.panel.hidden && !p.panel.contains(e.target as Node) && !p.button.contains(e.target as Node)) openPopover(p.panel, p.button, false);
+  if (!settingsPanel.hidden && !settingsPanel.contains(e.target as Node) && !settingsBtn.contains(e.target as Node)) { settingsPanel.hidden = true; settingsBtn.setAttribute("aria-expanded", "false"); }
 });
 
-/** A button showing the current choice ("Look: Human ▾") that opens a short list. */
-function dropdown<V extends string>(root: HTMLElement, label: string, items: [V, string][], get: () => V, set: (v: V) => void) {
-  const button = el("button", { type: "button", className: "chip-btn", "aria-expanded": "false" });
-  const panel = el("div", { className: "popover menu-list" });
-  panel.hidden = true;
-  const entries = items.map(([value, text]) => {
-    const b = el("button", { type: "button", "data-value": value, role: "menuitemradio" }, text);
-    b.onclick = () => { set(value); changed(); openPopover(panel, button, false); };
-    panel.append(b);
-    return [value, b] as const;
-  });
-  button.onclick = () => openPopover(panel, button, panel.hidden);
-  popovers.push({ panel, button });
-  root.replaceChildren(button, panel);
-  return () => {
-    const chosen = items.find(([v]) => v === get());
-    button.replaceChildren(el("span", { className: "label" }, `${label} `), chosen?.[1] ?? "", " ▾");
-    entries.forEach(([v, b]) => b.setAttribute("aria-checked", String(v === get())));
-  };
-}
-
-const refreshers: (() => void)[] = [];
-$("#camera-label").textContent = t("camera");
-const looks: [Look, string][] = [["solid", t("lookSolid")], ["wood", t("lookWood")], ["hologram", t("lookHologram")]];
-// Older saved settings may name a look that no longer exists.
-if (!looks.some(([l]) => l === settings.look)) settings.look = "solid";
-refreshers.push(dropdown($("#look"), t("look"), looks, () => settings.look, (v) => (settings.look = v)));
-const places: [Place, string][] = [["mat", t("envMat")], ["gym", t("envGym")], ["studio", t("envStudio")], ["night", t("envNight")]];
-refreshers.push(dropdown($("#place"), t("environment"), places, () => settings.place, (v) => (settings.place = v)));
-refreshers.push(segmented($("#camera"), [["free", t("camFree")], ["side", t("camSide")], ["top", t("camTop")], ["eyes", t("camEyes")]] as [Camera, string][], () => settings.camera, (v) => (settings.camera = v)));
-refreshers.push(dropdown($("#speed"), t("speed"), [["0.25", "¼×"], ["0.5", "½×"], ["1", "1×"]], () => String(settings.speed) as "0.25" | "0.5" | "1", (v) => (settings.speed = Number(v))));
-
 // Options: each with a line saying what it does.
-const optionsBtn = $<HTMLButtonElement>("#options-btn");
 const options = $("#options");
-optionsBtn.textContent = `${t("options")} ▾`;
-optionsBtn.onclick = () => openPopover(options, optionsBtn, options.hidden);
-popovers.push({ panel: options, button: optionsBtn });
-function toggle(key: "loop" | "mirror" | "degrees", label: string, hint: string) {
+function toggle(key: "loop" | "mirror" | "degrees" | "impact" | "oss", label: string, hint: string) {
   const box = el("input", { type: "checkbox" }) as HTMLInputElement;
   box.onchange = () => { settings[key] = box.checked; changed(); };
   refreshers.push(() => { box.checked = settings[key]; });
@@ -119,16 +99,19 @@ options.append(
   toggle("mirror", t("optMirror"), t("optMirrorHint")),
   choice(t("optShow"), t("optShowHint"), [["both", t("both")], ["0", t("amber")], ["1", t("blue")]], () => settings.show, (v) => (settings.show = v)),
   choice(t("optEyes"), t("optEyesHint"), [["0", t("amber")], ["1", t("blue")]], () => settings.eyesOf, (v) => (settings.eyesOf = v)),
+  toggle("oss", t("optOss"), t("optOssHint")),
+  toggle("impact", t("optImpact"), t("optImpactHint")),
   toggle("degrees", t("optDegrees"), t("optDegreesHint")),
 );
 
-// On a phone the bar folds into one button.
-$("#toolbar-toggle").textContent = `⚙ ${t("settings")}`;
-$("#toolbar-toggle").onclick = () => $("#toolbar").classList.toggle("open");
+// The panel slides over the view.
 $("#menu").textContent = `☰ ${t("menu")}`;
 $("#menu").onclick = () => document.body.classList.toggle("open");
+$("#panel-close").onclick = () => document.body.classList.remove("open");
+// Grabbing the view while the camera is directed hands it over.
+viewer.onGrab = () => { settings.camera = "free"; changed(); };
 
-// Language and theme, at the top of the panel.
+// Language and theme, at the foot of the panel.
 const langSel = $<HTMLSelectElement>("#lang");
 langSel.title = t("language");
 for (const l of LANGS) langSel.append(el("option", { value: l, textContent: langName(l) }));
@@ -138,7 +121,7 @@ langSel.onchange = () => { settings.lang = langSel.value; save(); location.reloa
 const themeBtn = $<HTMLButtonElement>("#theme");
 themeBtn.onclick = () => { settings.theme = settings.theme === "dark" ? "light" : "dark"; changed(); };
 
-let shownPlace = "";
+let shownPlace = "", shownLook = "";
 function applySettings() {
   refreshers.forEach((r) => r());
   document.documentElement.dataset.theme = settings.theme;
@@ -148,10 +131,14 @@ function applySettings() {
   if (viewer.look !== settings.look) viewer.setLook(settings.look);
   viewer.speed = settings.speed;
   viewer.loop = settings.loop;
+  viewer.impactEffect = settings.impact;
   viewer.visible = [settings.show !== "1", settings.show !== "0"];
   viewer.setMirrored(settings.mirror);
   const mode: CameraMode = settings.camera === "eyes" ? (settings.eyesOf === "0" ? "eyes0" : "eyes1") : settings.camera;
   if (viewer.cameraMode !== mode) viewer.setCamera(mode);
+  // The filmstrip shows the fighters as they look now.
+  if (shownLook && shownLook !== settings.look + settings.place + settings.theme + settings.mirror) renderStrip();
+  shownLook = settings.look + settings.place + settings.theme + settings.mirror;
 }
 function changed() { save(); applySettings(); }
 
@@ -228,36 +215,127 @@ function renderCustomizer() {
   );
 }
 
+// --- the local editor (dev only; the module and its server live outside any build)
+
+if (import.meta.env.DEV) {
+  const editorBtn = el("button", { type: "button", className: "chip-btn" }, "✎ Editor");
+  $("#settings .actions").append(editorBtn);
+  let open = false;
+  const openEditor = async () => {
+    if (open) return;
+    open = true;
+    settingsPanel.hidden = true;
+    const { openEditor } = await import("./editor.ts");
+    openEditor({ viewer, db, onClose: () => { open = false; route(); applySettings(); } });
+  };
+  editorBtn.onclick = openEditor;
+  if (sessionStorage.getItem("bjj-3d.editor")) openEditor();
+}
+
 // --- how to use, shown once
 
 $("#help-title").textContent = t("helpTitle");
 $("#help-steps").replaceChildren(...(["help1", "help2", "help3", "help4"] as const).map((k) => el("li", {}, t(k))));
 $("#help-ok").textContent = t("helpOk");
-$("#help-ok").onclick = () => { $("#help").hidden = true; settings.helpSeen = true; save(); };
+$("#help-ok").onclick = () => { $("#help").hidden = true; settings.helpSeen = true; save(); if (viewer.last > 0 && settings.oss) startOss(); };
 $("#help-btn").onclick = () => { $("#help").hidden = false; };
 $("#help").hidden = settings.helpSeen;
 
-// --- playback
+// --- playback: play button, a filmstrip of the steps, and the next move
 
-const slider = $<HTMLInputElement>("#time");
 const playBtn = $<HTMLButtonElement>("#play");
+const thumbs = $("#thumbs");
 let stops: number[] = [];
+
+// Oss!: the greeting, held for a second before a new fight starts (not when chaining).
+const ossEl = $("#oss");
+let ossTimer: ReturnType<typeof setTimeout> | null = null;
+function cancelOss() {
+  if (ossTimer) clearTimeout(ossTimer);
+  ossTimer = null;
+  ossEl.hidden = true;
+}
+function startOss() {
+  cancelOss();
+  viewer.playing = false;
+  ossEl.hidden = false;
+  // Restart the animations even if the element was just shown.
+  for (const e of Array.from(ossEl.children) as HTMLElement[]) { e.style.animation = "none"; void e.offsetWidth; e.style.animation = ""; }
+  ossTimer = setTimeout(() => { ossTimer = null; ossEl.hidden = true; viewer.playing = true; }, 1050);
+}
+
 playBtn.onclick = () => {
+  if (ossTimer) { cancelOss(); viewer.playing = true; return; }
   if (viewer.time >= viewer.last) viewer.time = 0;
   viewer.playing = !viewer.playing;
 };
-slider.oninput = () => { viewer.time = Number(slider.value); viewer.playing = false; };
-$("#prev").title = t("prev");
-$("#next").title = t("nextStep");
-$("#prev").onclick = () => { viewer.playing = false; viewer.time = [...stops].reverse().find((f) => f < viewer.time - 1e-3) ?? 0; };
-$("#next").onclick = () => { viewer.playing = false; viewer.time = stops.find((f) => f > viewer.time + 1e-3) ?? viewer.last; };
+const prevStop = () => { viewer.playing = false; viewer.time = [...stops].reverse().find((f) => f < viewer.time - 1e-3) ?? 0; };
+const nextStop = () => { viewer.playing = false; viewer.time = stops.find((f) => f > viewer.time + 1e-3) ?? viewer.last; };
 addEventListener("keydown", (e) => {
   const target = e.target as HTMLElement;
   if (target.tagName === "INPUT" && (target as HTMLInputElement).type === "search") return;
   if (e.key === " ") { e.preventDefault(); playBtn.click(); }
-  if (e.key === "ArrowLeft") $("#prev").click();
-  if (e.key === "ArrowRight") $("#next").click();
+  if (e.key === "ArrowLeft") prevStop();
+  if (e.key === "ArrowRight") nextStop();
 });
+
+/** Time under a point of the strip: each thumbnail spans from its stop to the next. */
+function timeAt(x: number): number | null {
+  const items = Array.from(thumbs.querySelectorAll<HTMLElement>(".thumb"));
+  for (const [i, item] of items.entries()) {
+    const r = item.getBoundingClientRect();
+    if (x >= r.left && x <= r.right) {
+      const from = stops[i], to = stops[i + 1] ?? viewer.last;
+      return from + ((x - r.left) / r.width) * (to - from);
+    }
+  }
+  return null;
+}
+let scrubbing = false;
+thumbs.addEventListener("pointerdown", (e) => {
+  const item = (e.target as HTMLElement).closest<HTMLElement>(".thumb");
+  if (!item) return;
+  scrubbing = true;
+  thumbs.setPointerCapture(e.pointerId);
+  cancelOss();
+  viewer.playing = false;
+  viewer.time = stops[+item.dataset.i!];
+});
+thumbs.addEventListener("pointermove", (e) => {
+  if (!scrubbing) return;
+  const time = timeAt(e.clientX);
+  if (time !== null) viewer.time = time;
+});
+const endScrub = () => { scrubbing = false; };
+thumbs.addEventListener("pointerup", endScrub);
+thumbs.addEventListener("pointercancel", endScrub);
+
+/** Draws the filmstrip: one real frame per step (or per keyframe), plus the next move. */
+let stripImages: string[] = [];
+function renderStrip() {
+  const images = viewer.thumbnails(stops);
+  stripImages = images;
+  thumbs.replaceChildren(...stops.map((_, i) => el("div", { className: "thumb", "data-i": String(i) },
+    el("img", { src: images[i], alt: "", draggable: false }),
+    el("span", { className: "n" }, String(i + 1)),
+    el("span", { className: "fill" }))));
+
+  const chip = $<HTMLAnchorElement>("#next-chip");
+  const end = current.type === "p" ? current.i : db.ends(current).to;
+  const moves = end === null ? [] : db.outgoing[end];
+  chip.hidden = moves.length === 0;
+  if (moves.length) {
+    const first = moves[0];
+    chip.href = `#${refKey(first)}`;
+    chip.onclick = () => { chainNext = true; };
+    chip.replaceChildren(el("span", {}, `${t("nextShort")} →`), el("b", {}, title(first)));
+    if (moves.length > 1) {
+      const more = el("span", { className: "muted", style: "cursor:pointer" }, t("moreMoves", { n: String(moves.length - 1) }));
+      more.onclick = (e) => { e.preventDefault(); e.stopPropagation(); document.body.classList.add("open"); };
+      chip.append(more);
+    }
+  }
+}
 
 // --- what is on screen
 
@@ -289,21 +367,34 @@ function show(r: Ref) {
   current = r;
   const kind = kindOf(r);
   viewer.show({ poses: db.poses(r), substeps: r.type === "t" ? file.substeps : 1, kind, chain });
+  cancelOss();
 
   const tech = db.technique(r);
   const keyframes = Array.from({ length: viewer.last + 1 }, (_, i) => i);
   stops = tech ? tech.steps.map((s) => s.frame) : keyframes;
-  $("#ticks").replaceChildren(...keyframes.map((i) =>
-    el("span", { className: tech && stops.includes(i) ? "step" : "", style: `left:${viewer.last ? (i / viewer.last) * 100 : 0}%` })));
-  slider.max = String(viewer.last);
-  slider.disabled = viewer.last === 0;
+  renderStrip();
+  $("#kind").textContent = kind ? kindName(kind) : "";
+  $("#title").textContent = title(r);
+  $("#ends").textContent = r.type === "p" ? t("stillAt") : what(r);
   document.title = `${title(r)} · bjj-3d`;
   renderPanel();
   document.body.classList.remove("open");
+  // A new fight (not a chained move, not a still position) opens with Oss!; it starts
+  // after the strip is drawn, so slow thumbnails cannot eat its second.
+  if (!chain && viewer.last > 0 && settings.oss && $("#help").hidden) startOss();
 }
 
 viewer.onFrame = (f) => {
-  slider.value = String(f.time);
+  // Progress: the current thumbnail is marked and fills up to the next stop.
+  const i = Math.max(0, stops.findLastIndex((s) => s <= f.time + 1e-3));
+  const nowPic = document.querySelector<HTMLImageElement>("#now-pic");
+  if (nowPic && stripImages[i] && nowPic.src !== stripImages[i]) nowPic.src = stripImages[i];
+  thumbs.querySelectorAll<HTMLElement>(".thumb").forEach((item, k) => {
+    item.classList.toggle("now", k === i);
+    const from = stops[k], to = stops[k + 1] ?? viewer.last;
+    const fill = item.querySelector<HTMLElement>(".fill")!;
+    fill.style.width = k === i && to > from ? `${Math.min(1, (f.time - from) / (to - from)) * 100}%` : k < i ? "100%" : "0";
+  });
   playBtn.textContent = viewer.playing ? "❚❚" : "▶";
   playBtn.title = viewer.playing ? t("pause") : t("play");
 
@@ -323,48 +414,93 @@ viewer.onFrame = (f) => {
     riskEl.classList.toggle("on", f.reading.danger);
   } else riskEl.classList.remove("on");
 
-  const angle = $("#angle");
-  const shown = !!(settings.degrees && kind && f.reading && f.reading.value > 0.05 && f.joint);
-  angle.classList.toggle("on", shown);
+  // The attention ring sits on the attacked joint while the lock is on.
+  const attention = $("#attention");
+  const shown = !!(kind && f.reading && f.reading.value > 0.05 && f.joint);
+  attention.classList.toggle("on", shown);
   if (shown) {
-    angle.style.left = `${f.joint!.x}px`;
-    angle.style.top = `${f.joint!.y}px`;
-    angle.textContent = measureLabel(kind!, f.reading!.measure);
+    attention.style.left = `${f.joint!.x}px`;
+    attention.style.top = `${f.joint!.y}px`;
+  }
+  const angle = $("#angle");
+  angle.classList.toggle("on", shown && settings.degrees);
+  if (shown && settings.degrees) angle.textContent = measureLabel(kind!, f.reading!.measure);
+
+  // The finishing moment: the edges darken, the ring burns, a pulse leaves the joint.
+  const stage = $("#stage");
+  stage.style.setProperty("--impact", f.impact.toFixed(3));
+  attention.classList.toggle("hot", f.impact > 0.2);
+  if (f.impactStart && f.joint) {
+    const pulse = el("span", { className: "pulse", style: `left:${f.joint.x}px;top:${f.joint.y}px` });
+    stage.append(pulse);
+    pulse.addEventListener("animationend", () => pulse.remove());
   }
 };
 
 // --- panel
 
-/** A clickable row: the name, what it is, and a badge for finishes. */
+/** A small image of where a ref ends (a position, or a transition's last frame), cached. */
+const snaps = new Map<string, string>();
+function snapFor(r: Ref): string {
+  const key = refKey(r);
+  let img = snaps.get(key);
+  if (!img) {
+    const poses = db.poses(r);
+    img = viewer.snapshot(poses[poses.length - 1], kindOf(r));
+    snaps.set(key, img);
+  }
+  return img;
+}
+const lazySnaps = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (!e.isIntersecting) continue;
+    const img = e.target as HTMLImageElement;
+    const r = parseRef(img.dataset.snap!);
+    if (r) img.src = snapFor(r);
+    lazySnaps.unobserve(img);
+  }
+}, { root: $("#panel-body"), rootMargin: "200px" });
+function snapImage(r: Ref) {
+  const img = el("img", { alt: "", draggable: false, "data-snap": refKey(r) }) as HTMLImageElement;
+  lazySnaps.observe(img);
+  return img;
+}
+
+/** A clickable row: a picture of where it ends, the name, what it is, and a badge for finishes. */
 function row(r: Ref, opts: { chain?: boolean; sub?: string } = {}) {
   const kind = kindOf(r);
   const a = el("a", { href: `#${refKey(r)}` },
-    el("span", { className: "main" }, kind ? el("span", { className: "kind" }, kindName(kind)) : null, title(r), opts.chain ? el("span", { className: "go" }, "→") : null),
-    opts.sub ? el("span", { className: "sub" }, opts.sub) : null);
+    el("span", { className: "pic" }, snapImage(r)),
+    el("span", { className: "text" },
+      el("span", { className: "main" }, title(r), opts.chain ? el("span", { className: "go" }, "→") : null),
+      kind ? el("span", { className: "kind" }, kindName(kind)) : null,
+      opts.sub ? el("span", { className: "sub" }, opts.sub) : null));
   if (refKey(r) === refKey(current)) a.classList.add("here");
   if (opts.chain) a.onclick = () => { chainNext = true; };
   return el("li", {}, a);
 }
 
 function nowCard() {
-  const card = el("section", { className: "now" }, el("h2", {}, title(current)));
   const kind = kindOf(current);
-  if (kind) card.prepend(el("span", { className: "kind" }, kindName(kind)));
-  card.append(el("p", { className: "what" }, current.type === "p" ? t("stillAt") : what(current)));
+  const card = el("section", { className: "now" },
+    el("div", { className: "pic" }, el("img", { id: "now-pic", alt: "", draggable: false }), kind ? el("span", { className: "kind" }, kindName(kind)) : null),
+    el("div", { className: "body" }, el("h2", {}, title(current)), el("p", { className: "what" }, current.type === "p" ? t("stillAt") : what(current))));
+  const body = card.lastElementChild as HTMLElement;
+  const append = (...nodes: HTMLElement[]) => body.append(...nodes);
   const mover = db.mover(current);
   if (mover !== null) {
-    const body = viewer.swapped ? 1 - mover : mover;
-    card.append(el("p", { className: "mover" }, el("span", { className: "dot", style: `background:${COLORS[body]}` }), t("mover", { who: body === 0 ? t("amber") : t("blue") })));
+    const who = viewer.swapped ? 1 - mover : mover;
+    append(el("p", { className: "mover" }, el("span", { className: "dot", style: `background:${COLORS[who]}` }), t("mover", { who: who === 0 ? t("amber") : t("blue") })));
   }
   const tech = db.technique(current);
   if (tech) {
-    card.append(el("ol", { className: "steps" }, ...tech.steps.map((s) => {
+    append(el("ol", { className: "steps" }, ...tech.steps.map((s) => {
       const li = el("li", {}, pick(s.text));
       li.onclick = () => { viewer.time = s.frame; viewer.playing = false; };
       return li;
     })));
-    if (tech.note) card.append(el("p", { className: "muted note" }, pick(tech.note)));
-    if (!tech.reviewed) card.append(el("p", { className: "muted note" }, t("draft")));
+    if (tech.note) append(el("p", { className: "muted note" }, pick(tech.note)));
+    if (!tech.reviewed) append(el("p", { className: "muted note" }, t("draft")));
   }
   return card;
 }
@@ -460,4 +596,4 @@ route();
 viewer.showSticks(query.get("debug") === "1");
 if (query.get("debug") === "1") Object.assign(window, { viewer });
 const frame = query.get("frame");
-if (frame !== null) { viewer.time = Math.min(Number(frame), viewer.last); viewer.playing = false; }
+if (frame !== null) { cancelOss(); viewer.time = Math.min(Number(frame), viewer.last); viewer.playing = false; }

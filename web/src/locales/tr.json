@@ -145,5 +145,14 @@
   "beltBlue": "Mavi",
   "beltPurple": "Mor",
   "beltBrown": "Kahverengi",
-  "beltBlack": "Siyah"
+  "beltBlack": "Siyah",
+  "camDirected": "Yönlendirilmiş",
+  "nextShort": "sonraki",
+  "moreMoves": "{n} daha",
+  "optImpact": "Bitiriş anı",
+  "optImpactHint": "Kilit sakatlık bölgesine girince yavaşlar ve yaklaşır.",
+  "endsAt": "bitiş",
+  "startsAt": "başlangıç",
+  "optOss": "Başlangıçta Oss!",
+  "optOssHint": "Yeni bir maç başlamadan önce nabız gibi atan büyük bir Oss!."
 }

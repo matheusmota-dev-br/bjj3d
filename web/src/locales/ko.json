@@ -145,5 +145,14 @@
   "beltBlue": "파란띠",
   "beltPurple": "보라띠",
   "beltBrown": "갈색띠",
-  "beltBlack": "검은띠"
+  "beltBlack": "검은띠",
+  "camDirected": "자동",
+  "nextShort": "다음",
+  "moreMoves": "{n}개 더",
+  "optImpact": "피니시 순간",
+  "optImpactHint": "꺾기가 위험 범위에 들어가면 느려지고 가까워집니다.",
+  "endsAt": "끝 위치",
+  "startsAt": "시작 위치",
+  "optOss": "시작할 때 Oss!",
+  "optOssHint": "새 대결이 시작되기 전에 큰 Oss!가 맥동합니다."
 }

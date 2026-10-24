@@ -145,5 +145,14 @@
   "beltBlue": "Biru",
   "beltPurple": "Ungu",
   "beltBrown": "Cokelat",
-  "beltBlack": "Hitam"
+  "beltBlack": "Hitam",
+  "camDirected": "Otomatis",
+  "nextShort": "berikutnya",
+  "moreMoves": "{n} lagi",
+  "optImpact": "Momen kuncian",
+  "optImpactHint": "Melambat dan mendekat saat kuncian masuk zona cedera.",
+  "endsAt": "berakhir di",
+  "startsAt": "mulai di",
+  "optOss": "Oss! saat mulai",
+  "optOssHint": "Oss! besar berdenyut sebelum pertarungan baru dimulai."
 }

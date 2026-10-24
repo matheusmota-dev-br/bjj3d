@@ -145,5 +145,14 @@
   "beltBlue": "Azul",
   "beltPurple": "Morado",
   "beltBrown": "Marrón",
-  "beltBlack": "Negro"
+  "beltBlack": "Negro",
+  "camDirected": "Dirigida",
+  "nextShort": "siguiente",
+  "moreMoves": "{n} más",
+  "optImpact": "Momento de la finalización",
+  "optImpactHint": "Ralentiza y acerca cuando la llave entra en la zona de lesión.",
+  "endsAt": "termina en",
+  "startsAt": "empieza en",
+  "optOss": "¡Oss! al empezar",
+  "optOssHint": "Un gran ¡Oss! con pulso antes de que empiece una lucha nueva."
 }

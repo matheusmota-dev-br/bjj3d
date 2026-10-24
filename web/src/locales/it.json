@@ -145,5 +145,14 @@
   "beltBlue": "Blu",
   "beltPurple": "Viola",
   "beltBrown": "Marrone",
-  "beltBlack": "Nera"
+  "beltBlack": "Nera",
+  "camDirected": "Guidata",
+  "nextShort": "prossimo",
+  "moreMoves": "altri {n}",
+  "optImpact": "Momento della finalizzazione",
+  "optImpactHint": "Rallenta e si avvicina quando la leva entra nella zona di lesione.",
+  "endsAt": "finisce in",
+  "startsAt": "inizia in",
+  "optOss": "Oss! all'inizio",
+  "optOssHint": "Un grande Oss! con un impulso prima che inizi un nuovo incontro."
 }

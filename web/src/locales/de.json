@@ -145,5 +145,14 @@
   "beltBlue": "Blau",
   "beltPurple": "Lila",
   "beltBrown": "Braun",
-  "beltBlack": "Schwarz"
+  "beltBlack": "Schwarz",
+  "camDirected": "Geführt",
+  "nextShort": "weiter",
+  "moreMoves": "{n} weitere",
+  "optImpact": "Moment der Aufgabe",
+  "optImpactHint": "Verlangsamt und zoomt heran, wenn der Hebel den Verletzungsbereich erreicht.",
+  "endsAt": "endet in",
+  "startsAt": "beginnt in",
+  "optOss": "Oss! zum Start",
+  "optOssHint": "Ein großes Oss! mit Puls, bevor ein neuer Kampf beginnt."
 }

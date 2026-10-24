@@ -145,5 +145,14 @@
   "beltBlue": "Blue",
   "beltPurple": "Purple",
   "beltBrown": "Brown",
-  "beltBlack": "Black"
+  "beltBlack": "Black",
+  "camDirected": "Directed",
+  "nextShort": "next",
+  "moreMoves": "{n} more",
+  "optImpact": "Finishing moment",
+  "optImpactHint": "Slows down and closes in when a lock reaches its danger range.",
+  "endsAt": "ends in",
+  "startsAt": "starts in",
+  "optOss": "Oss! at the start",
+  "optOssHint": "A big Oss! with a pulse before a new fight begins."
 }

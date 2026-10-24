@@ -14,7 +14,7 @@ import { glowPoint, read, SIDED, type Kind, type Reading, type Side } from "./me
 export const COLORS = ["#f2b544", "#5fb4ff"] as const;
 const SECONDS_PER_FRAME = 0.8;
 
-export type CameraMode = "free" | "side" | "top" | "eyes0" | "eyes1";
+export type CameraMode = "directed" | "free" | "side" | "top" | "eyes0" | "eyes1";
 
 export interface Clip {
   /** Frames to play; keyframe k is poses[k * substeps]. */
@@ -31,6 +31,10 @@ export interface Frame {
   reading: Reading | null;
   /** Screen position of the attacked joint, in CSS pixels. */
   joint: { x: number; y: number } | null;
+  /** The finishing moment: 0 outside it, rising to 1 at its peak. */
+  impact: number;
+  /** True on the one frame the finishing moment starts. */
+  impactStart: boolean;
 }
 
 /** What a fighter can be given: thickness and belt. */
@@ -69,9 +73,15 @@ export class Viewer {
   loop = false;
   mirrored = false;
   look: Look = "solid";
-  cameraMode: CameraMode = "free";
+  cameraMode: CameraMode = "directed";
   visible: [boolean, boolean] = [true, true];
   onFrame: (f: Frame) => void = () => {};
+  /** The user grabbed the view while the camera was directed. */
+  onGrab: () => void = () => {};
+  /** Slow down and push in when a lock enters its danger range. */
+  impactEffect = true;
+  private impact: { t: number; joint: THREE.Vector3; started: boolean } | null = null;
+  private impactDone = false;
   private sticks: THREE.LineSegments | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -104,6 +114,7 @@ export class Viewer {
       return { mannequin, uniforms: sharedUniforms(), style: { build: 1, belt: "white" as Belt }, paints: {} };
     });
     this.setLook(this.look);
+    canvas.addEventListener("pointerdown", () => { if (this.cameraMode === "directed" && this.studio === null) this.onGrab(); });
     addEventListener("resize", () => this.resize());
     this.resize();
     this.renderer.setAnimationLoop(() => this.tick());
@@ -181,8 +192,24 @@ export class Viewer {
     }) as [Landmarks, Landmarks] : null;
     this.time = 0;
     this.playing = poses.length > 1;
+    this.impact = null;
+    this.impactDone = false;
+    this.lastKey = -1;
+    this.directedJump = !r;
     if (!r) this.frameCamera(true);
   }
+
+  /** The editor's view: these poses, this keyframe, no camera moves, nothing playing. */
+  preview(poses: Pose[], time: number) {
+    this.setPoses(poses, null);
+    this.fadeFrom = null;
+    this.impact = null;
+    this.time = Math.min(time, this.last);
+    this.playing = false;
+  }
+
+  /** The poses on screen (after mirroring and chaining), for the editor to start from. */
+  get currentPoses() { return this.poses; }
 
   setMirrored(on: boolean) {
     if (on === this.mirrored) return;
@@ -248,12 +275,133 @@ export class Viewer {
   }
 
   setCamera(mode: CameraMode) {
+    const from = this.cameraMode;
     this.cameraMode = mode;
     this.controls.enabled = mode === "free";
     // A grappler's view is mostly the opponent at arm's length: a wide lens shows more of it.
     this.camera.fov = mode.startsWith("eyes") ? 80 : 40;
     this.camera.updateProjectionMatrix();
-    if (mode === "free") this.frameCamera(true);
+    if (mode === "free" && from !== "directed") this.frameCamera(true);
+    if (mode === "directed") { this.lastKey = -1; this.directedJump = from !== "free"; this.eased.position.copy(this.camera.position); this.eased.target.copy(this.controls.target); }
+  }
+
+  // --- the directed camera: for each keyframe, the angle that shows the move best
+
+  private goal = { position: new THREE.Vector3(), target: new THREE.Vector3() };
+  /** The camera's own slow approach to the goal, before the finishing push-in. */
+  private eased = { position: new THREE.Vector3(), target: new THREE.Vector3() };
+  private azimuth = Math.PI / 4;
+  private lastKey = -1;
+  private directedJump = true;
+
+  /**
+   * Where the camera should be for these landmarks: close enough to fill the view with
+   * both bodies, from a direction that keeps the attacked joint in sight, does not look
+   * along the line between the two bodies, and stays near the previous direction.
+   */
+  private directedGoal(l: Landmarks[], continuity: boolean, margin = 1.12) {
+    const box = new THREE.Box3();
+    for (const p of l) for (const v of Object.values(p)) box.expandByPoint(v);
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    const radius = Math.max(sphere.radius, 0.5);
+    const dist = this.fitDistance(radius * margin);
+    // Slightly below the center, so the bodies sit above the filmstrip.
+    const target = sphere.center.clone().add(new THREE.Vector3(0, -radius * 0.12, 0));
+    const between = l[1].Core.clone().sub(l[0].Core).setY(0).normalize();
+    const joint = this.target ? glowPoint(this.target.kind, l[this.target.player], this.target.side) : null;
+
+    let best = { score: Infinity, azimuth: this.azimuth, elevation: 0.5 };
+    for (let i = 0; i < 24; i++) {
+      const az = (i / 24) * Math.PI * 2;
+      for (const el of [0.45, 0.7]) {
+        const dir = new THREE.Vector3(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az));
+        let score = 0;
+        // Bodies side by side read better than one behind the other.
+        score += Math.abs(dir.x * between.x + dir.z * between.z) * 1.5;
+        // The attacked joint should not hide behind a limb or a torso.
+        if (joint) score += occlusion(target.clone().addScaledVector(dir, dist), joint, l, this.target!) * 4;
+        // A gentle elevation looks natural; from straight above the action flattens.
+        score += Math.abs(el - 0.5) * 0.6;
+        if (continuity) {
+          const d = Math.abs(((az - this.azimuth + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+          score += (d / Math.PI) * 1.2;
+        }
+        if (score < best.score) best = { score, azimuth: az, elevation: el };
+      }
+    }
+    this.azimuth = best.azimuth;
+    const dir = new THREE.Vector3(Math.cos(best.elevation) * Math.sin(best.azimuth), Math.sin(best.elevation), Math.cos(best.elevation) * Math.cos(best.azimuth));
+    return { position: target.clone().addScaledVector(dir, dist), target };
+  }
+
+  /**
+   * Images of the given keyframes, as the directed camera sees them. 640 × 360 serves the
+   * panel's card at full width on a 2× screen; the strip only shrinks them.
+   */
+  thumbnails(keys: number[], width = 640, height = 360): string[] {
+    const frames = keys.map((key) => [0, 1].map((p) => this.landmarksAt(key, p)));
+    return this.renderFrames(frames, this.target, width, height);
+  }
+
+  /** A small image of any pose (a position, or the end of a transition), with its glow. */
+  snapshot(pose: Pose, kind: Kind | null, width = 352, height = 198): string {
+    const l = pose.map(landmarksFromPlayer);
+    let target: { player: number; side: Side; kind: Kind } | null = null;
+    if (kind) {
+      let best = -1;
+      for (const player of [0, 1])
+        for (const side of (SIDED[kind] ? ["Left", "Right"] : ["Left"]) as Side[]) {
+          const v = read(kind, l[player], l[1 - player], side).value;
+          if (v > best) { best = v; target = { player, side, kind }; }
+        }
+    }
+    return this.renderFrames([l], target, width, height)[0];
+  }
+
+  /** Renders frames offscreen with the directed camera; the live scene is restored by the next tick. */
+  private renderFrames(frames: Landmarks[][], target: { player: number; side: Side; kind: Kind } | null, width: number, height: number): string[] {
+    const rt = new THREE.WebGLRenderTarget(width, height, { samples: 4 });
+    rt.texture.colorSpace = THREE.SRGBColorSpace;
+    const cam = new THREE.PerspectiveCamera(40, width / height, 0.05, 50);
+    const pixels = new Uint8Array(width * height * 4);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d")!;
+    const image = ctx.createImageData(width, height);
+    const saved = { azimuth: this.azimuth, sticks: this.sticks?.visible ?? false, target: this.target, aspect: this.camera.aspect };
+    if (this.sticks) this.sticks.visible = false;
+    this.target = target;
+    this.camera.aspect = cam.aspect; // fitDistance reads the live camera's aspect
+    const out: string[] = [];
+    for (const l of frames) {
+      this.fighters.forEach((f, p) => { f.mannequin.pose(l[p]); f.mannequin.group.visible = true; f.uniforms.tension.value = 0; f.uniforms.intensity.value = 1; });
+      if (target) {
+        const u = this.fighters[target.player].uniforms;
+        u.tension.value = read(target.kind, l[target.player], l[1 - target.player], target.side).value;
+        u.tensionCenter.value.copy(glowPoint(target.kind, l[target.player], target.side));
+      }
+      const mid = l[0].MidHip.clone().add(l[1].MidHip).multiplyScalar(0.5);
+      this.key.target.position.copy(mid);
+      this.key.position.copy(mid).add(new THREE.Vector3(1.5, 4, 2));
+      const g = this.directedGoal(l, false, 0.95);
+      cam.position.copy(g.position);
+      cam.lookAt(g.target);
+      this.renderer.setRenderTarget(rt);
+      this.renderer.render(this.scene, cam);
+      this.renderer.readRenderTargetPixels(rt, 0, 0, width, height, pixels);
+      // WebGL reads bottom-up; the canvas wants top-down.
+      for (let y = 0; y < height; y++) image.data.set(pixels.subarray((height - 1 - y) * width * 4, (height - y) * width * 4), y * width * 4);
+      ctx.putImageData(image, 0, 0);
+      out.push(canvas.toDataURL("image/jpeg", 0.9));
+    }
+    this.renderer.setRenderTarget(null);
+    rt.dispose();
+    this.azimuth = saved.azimuth;
+    this.target = saved.target;
+    this.camera.aspect = saved.aspect;
+    if (this.sticks) this.sticks.visible = saved.sticks;
+    return out;
   }
 
   private landmarksAt(keyTime: number, player: number): Landmarks {
@@ -289,6 +437,7 @@ export class Viewer {
       this.studio = null;
       this.camAnim = null;
       this.frameCamera(true);
+      this.setCamera(this.cameraMode);
       return;
     }
     // The standing player, moved to the origin and turned to face the camera's side (+z).
@@ -298,7 +447,7 @@ export class Viewer {
     const shift = new THREE.Vector3(-l.MidHip.x, 0, -l.MidHip.z);
     for (const p of Object.values(l)) p.add(shift).applyQuaternion(turn);
     this.studioLandmarks = l;
-    this.setCamera("free");
+    this.controls.enabled = true;
     this.focusStudio("body", true);
   }
 
@@ -333,19 +482,34 @@ export class Viewer {
     else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     this.frameCamera(true);
+    this.lastKey = -1;
   }
+
+  private lastDt = 0.016;
 
   private tick() {
     const dt = Math.min(this.clock.getDelta(), 0.1);
+    this.lastDt = dt;
     if (this.studio !== null) return this.tickStudio(dt);
     if (!this.frames.length) return;
+    // The finishing moment: time crawls, then picks up again.
+    let impactStart = false;
+    if (this.impact) {
+      this.impact.t += dt;
+      impactStart = !this.impact.started;
+      this.impact.started = true;
+      if (this.impact.t > IMPACT.total) this.impact = null;
+    }
+    const envelope = this.impact ? impactEnvelope(this.impact.t) : 0;
+    const slow = this.impact ? impactSpeed(this.impact.t) : 1;
     if (this.playing) {
-      this.time += (dt / SECONDS_PER_FRAME) * this.speed;
+      this.time += (dt / SECONDS_PER_FRAME) * this.speed * slow;
       if (this.time >= this.last) {
-        if (this.loop && this.last > 0) this.time = 0;
+        if (this.loop && this.last > 0) { this.time = 0; this.impactDone = false; }
         else { this.time = this.last; this.playing = false; }
       }
     }
+    if (this.time < 0.05) this.impactDone = false;
 
     const l = [0, 1].map((p) => this.landmarksAt(this.time, p));
     this.fighters.forEach((f, p) => {
@@ -365,8 +529,11 @@ export class Viewer {
       const u = this.fighters[player].uniforms;
       u.tension.value = this.visible[player] ? reading.value : 0;
       u.tensionCenter.value.copy(pos);
-      const s = pos.clone().project(this.camera);
-      joint = { x: ((s.x + 1) / 2) * this.canvas.clientWidth, y: ((1 - s.y) / 2) * this.canvas.clientHeight };
+      if (reading.danger && this.playing && this.impactEffect && !this.impactDone && !this.impact) {
+        this.impact = { t: 0, joint: pos.clone(), started: false };
+        this.impactDone = true;
+      }
+      if (this.impact) this.impact.joint.copy(pos);
     }
 
     if (this.sticks?.visible) {
@@ -378,9 +545,14 @@ export class Viewer {
     const mid = l[0].MidHip.clone().add(l[1].MidHip).multiplyScalar(0.5);
     this.key.target.position.copy(mid);
     this.key.position.copy(mid).add(new THREE.Vector3(1.5, 4, 2));
-    this.updateCamera(l);
+    this.updateCamera(l, envelope);
+    if (this.target) {
+      const { player, side, kind } = this.target;
+      const s = glowPoint(kind, l[player], side).project(this.camera);
+      joint = { x: ((s.x + 1) / 2) * this.canvas.clientWidth, y: ((1 - s.y) / 2) * this.canvas.clientHeight };
+    }
     this.renderer.render(this.scene, this.camera);
-    this.onFrame({ time: this.time, last: this.last, reading, joint });
+    this.onFrame({ time: this.time, last: this.last, reading, joint, impact: envelope, impactStart });
   }
 
   private tickStudio(dt: number) {
@@ -406,9 +578,38 @@ export class Viewer {
     this.renderer.render(this.scene, this.camera);
   }
 
-  private updateCamera(l: Landmarks[]) {
+  private updateCamera(l: Landmarks[], impact = 0) {
     const c = l[0].MidHip.clone().add(l[1].MidHip).multiplyScalar(0.5);
     switch (this.cameraMode) {
+      case "directed": {
+        const key = Math.floor(this.time + 1e-6);
+        if (key !== this.lastKey) {
+          const g = this.directedGoal(l, !this.directedJump);
+          this.goal = g;
+          this.lastKey = key;
+          if (this.directedJump) { this.eased.position.copy(g.position); this.eased.target.copy(g.target); this.directedJump = false; }
+        }
+        // Glide toward the goal; while playing, orbit slowly so the view never feels frozen.
+        const k = 1 - Math.exp(-this.lastDt * 2.2);
+        this.eased.position.lerp(this.goal.position, k);
+        this.eased.target.lerp(this.goal.target, k);
+        if (this.playing) {
+          const drift = 0.05 * this.lastDt;
+          this.eased.position.sub(this.eased.target).applyAxisAngle(new THREE.Vector3(0, 1, 0), drift).add(this.eased.target);
+          this.goal.position.sub(this.goal.target).applyAxisAngle(new THREE.Vector3(0, 1, 0), drift).add(this.goal.target);
+          this.azimuth += drift;
+        }
+        // At the finishing moment, push in toward the joint and come back.
+        this.camera.position.copy(this.eased.position);
+        this.controls.target.copy(this.eased.target);
+        if (impact > 0 && this.impact) {
+          const j = this.impact.joint;
+          this.controls.target.lerp(j, 0.7 * impact);
+          this.camera.position.lerp(j.clone().add(this.eased.position.clone().sub(j).multiplyScalar(0.5)), impact);
+        }
+        this.camera.lookAt(this.controls.target);
+        return;
+      }
       case "free":
         // Drift the orbit center along when a chain of transitions wanders across the mat.
         this.controls.target.lerp(this.focus, 0.05);
@@ -437,6 +638,46 @@ export class Viewer {
       }
     }
   }
+}
+
+/** The finishing moment, in seconds: slow in, hold, speed back up. */
+const IMPACT = { in: 0.25, hold: 1.1, out: 0.55, total: 1.9, slowest: 0.12 };
+const smooth = (x: number) => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
+/** 0 → 1 → 0 over the moment. */
+function impactEnvelope(t: number) {
+  if (t < IMPACT.in) return smooth(t / IMPACT.in);
+  if (t < IMPACT.in + IMPACT.hold) return 1;
+  return 1 - smooth((t - IMPACT.in - IMPACT.hold) / IMPACT.out);
+}
+/** Playback speed factor over the moment. */
+const impactSpeed = (t: number) => 1 - (1 - IMPACT.slowest) * impactEnvelope(t);
+
+/**
+ * How much of the way from the camera to a joint passes through the bodies: the sum over
+ * every limb and torso segment (except those the joint belongs to) of how deep the line
+ * of sight cuts into it, in units of its thickness.
+ */
+function occlusion(eye: THREE.Vector3, joint: THREE.Vector3, l: Landmarks[], target: { player: number; side: Side }) {
+  const own = new RegExp(`^${target.side}`);
+  const line = new THREE.Line3(eye, joint.clone().addScaledVector(eye.clone().sub(joint).normalize(), 0.08));
+  const a = new THREE.Vector3(), b = new THREE.Vector3();
+  let total = 0;
+  l.forEach((body, p) => {
+    for (const [j, k] of STICKS) {
+      if (p === target.player && own.test(j) && own.test(k)) continue;
+      const seg = new THREE.Line3(body[j], body[k]);
+      // Closest approach between the sight line and the segment, sampled along the segment.
+      let best = Infinity;
+      for (let t = 0; t <= 1; t += 0.1) {
+        seg.at(t, a);
+        line.closestPointToPoint(a, true, b);
+        best = Math.min(best, a.distanceTo(b));
+      }
+      const thick = 0.07;
+      if (best < thick) total += (thick - best) / thick;
+    }
+  });
+  return total;
 }
 
 /** GrappleMap's own stick figures, for checking the mannequins against the data. */

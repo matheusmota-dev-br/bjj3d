@@ -15,46 +15,47 @@
 <aside id="panel">
   <div class="top">
     <div class="top-row">
-      <a class="name" href="#">bjj-3d</a>
-      <div class="prefs">
-        <select id="lang"></select>
-        <button id="theme" class="chip-btn round"></button>
-      </div>
+      <a class="name" href="#"><img src="favicon.svg" alt="" width="26" height="26">bjj-3d</a>
+      <button id="panel-close" class="chip-btn round" aria-label="✕">✕</button>
     </div>
     <input id="search" type="search" autocomplete="off" spellcheck="false">
   </div>
   <div id="panel-body"></div>
-  <p id="about" class="muted"></p>
+  <div class="foot">
+    <p id="about" class="muted"></p>
+    <div class="prefs"><select id="lang"></select><button id="theme" class="chip-btn round"></button></div>
+  </div>
 </aside>
 <main id="stage">
   <canvas id="view"></canvas>
 
-  <button id="menu" class="float-btn menu"></button>
+  <div class="top-left">
+    <button id="menu" class="float-btn"></button>
+    <div id="title-card" class="glass"><span id="kind" class="kind"></span><h1 id="title"></h1><p id="ends"></p></div>
+  </div>
 
-  <div id="toolbar" class="toolbar">
-    <button id="toolbar-toggle" class="float-btn toolbar-toggle"></button>
-    <div class="toolbar-body">
-      <div class="group" id="look"></div>
-      <div class="group" id="place"></div>
-      <div class="group"><span class="label" id="camera-label"></span><div class="seg" id="camera"></div></div>
-      <div class="group" id="speed"></div>
-      <div class="group options">
-        <button id="options-btn" class="chip-btn" aria-expanded="false"></button>
-        <div id="options" class="popover" hidden></div>
-      </div>
-      <button id="fighters-btn" class="chip-btn"></button>
-      <button id="help-btn" class="chip-btn round" aria-label="?">?</button>
+  <div class="top-right">
+    <div class="seg glass" id="camchip"></div>
+    <button id="settings-btn" class="float-btn" aria-expanded="false"></button>
+    <div id="settings" class="popover settings" hidden>
+      <div class="row"><span class="label" id="look-label"></span><div class="seg" id="look"></div></div>
+      <div class="row"><span class="label" id="place-label"></span><div class="seg" id="place"></div></div>
+      <div class="row"><span class="label" id="camera-label"></span><div class="seg" id="camera"></div></div>
+      <div class="row"><span class="label" id="speed-label"></span><div class="seg" id="speed"></div></div>
+      <div id="options"></div>
+      <div class="row actions"><button id="fighters-btn" class="chip-btn"></button><button id="help-btn" class="chip-btn round" aria-label="?">?</button></div>
     </div>
   </div>
+
+  <div id="vignette"></div>
+  <div id="oss" hidden><span class="ring"></span><span class="ring"></span><span class="word">Oss!</span></div>
+  <div id="attention"><span id="angle"></span></div>
 
   <aside id="customizer" class="customizer" hidden>
     <div class="cz-head"><h2 id="cz-title"></h2><button id="cz-done" class="chip-btn"></button></div>
     <div class="tabs" id="cz-tabs"></div>
     <div id="cz-body" class="cz-body"></div>
   </aside>
-
-  <p id="risk"></p>
-  <div id="angle"></div>
 
   <div id="help" class="help" hidden>
     <h2 id="help-title"></h2>
@@ -63,12 +64,12 @@
   </div>
 
   <div class="player">
+    <p id="risk"></p>
     <p id="caption"></p>
-    <div class="bar">
-      <button id="prev" class="icon-btn">⏮</button>
+    <div class="strip glass">
       <button id="play" class="icon-btn play">▶</button>
-      <button id="next" class="icon-btn">⏭</button>
-      <div class="track"><div id="ticks"></div><input id="time" type="range" min="0" step="0.001" value="0"></div>
+      <div id="thumbs"></div>
+      <a id="next-chip" class="next-chip" hidden></a>
     </div>
   </div>
 </main>

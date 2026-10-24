@@ -145,5 +145,14 @@
   "beltBlue": "蓝带",
   "beltPurple": "紫带",
   "beltBrown": "棕带",
-  "beltBlack": "黑带"
+  "beltBlack": "黑带",
+  "camDirected": "自动",
+  "nextShort": "下一个",
+  "moreMoves": "还有 {n} 个",
+  "optImpact": "降服时刻",
+  "optImpactHint": "当关节技进入危险范围时放慢并拉近。",
+  "endsAt": "结束于",
+  "startsAt": "开始于",
+  "optOss": "开始时 Oss!",
+  "optOssHint": "新的一场开始前，显示大大的 Oss! 并脉动。"
 }

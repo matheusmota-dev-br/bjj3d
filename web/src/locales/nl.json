@@ -145,5 +145,14 @@
   "beltBlue": "Blauw",
   "beltPurple": "Paars",
   "beltBrown": "Bruin",
-  "beltBlack": "Zwart"
+  "beltBlack": "Zwart",
+  "camDirected": "Geregisseerd",
+  "nextShort": "volgende",
+  "moreMoves": "nog {n}",
+  "optImpact": "Moment van de submission",
+  "optImpactHint": "Vertraagt en zoomt in als de klem de blessurezone bereikt.",
+  "endsAt": "eindigt in",
+  "startsAt": "begint in",
+  "optOss": "Oss! bij de start",
+  "optOssHint": "Een grote Oss! met een puls voordat een nieuwe partij begint."
 }

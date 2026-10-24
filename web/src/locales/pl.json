@@ -145,5 +145,14 @@
   "beltBlue": "Niebieski",
   "beltPurple": "Purpurowy",
   "beltBrown": "Brązowy",
-  "beltBlack": "Czarny"
+  "beltBlack": "Czarny",
+  "camDirected": "Prowadzona",
+  "nextShort": "dalej",
+  "moreMoves": "jeszcze {n}",
+  "optImpact": "Moment poddania",
+  "optImpactHint": "Zwalnia i zbliża, gdy dźwignia wchodzi w strefę kontuzji.",
+  "endsAt": "kończy się w",
+  "startsAt": "zaczyna się w",
+  "optOss": "Oss! na start",
+  "optOssHint": "Wielkie Oss! z pulsem, zanim zacznie się nowa walka."
 }

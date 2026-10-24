@@ -145,5 +145,14 @@
   "beltBlue": "青帯",
   "beltPurple": "紫帯",
   "beltBrown": "茶帯",
-  "beltBlack": "黒帯"
+  "beltBlack": "黒帯",
+  "camDirected": "自動",
+  "nextShort": "次へ",
+  "moreMoves": "ほか {n}",
+  "optImpact": "フィニッシュの瞬間",
+  "optImpactHint": "関節技が危険域に入るとスローになり寄ります。",
+  "endsAt": "終点",
+  "startsAt": "始点",
+  "optOss": "開始時の Oss!",
+  "optOssHint": "新しい試合が始まる前に大きな Oss! が脈打ちます。"
 }

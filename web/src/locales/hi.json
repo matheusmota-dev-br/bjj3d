@@ -145,5 +145,14 @@
   "beltBlue": "नीली",
   "beltPurple": "बैंगनी",
   "beltBrown": "भूरी",
-  "beltBlack": "काली"
+  "beltBlack": "काली",
+  "camDirected": "स्वचालित",
+  "nextShort": "अगला",
+  "moreMoves": "{n} और",
+  "optImpact": "सबमिशन का क्षण",
+  "optImpactHint": "जब लॉक चोट की सीमा में आता है तो धीमा होकर पास आता है।",
+  "endsAt": "यहाँ ख़त्म",
+  "startsAt": "यहाँ शुरू",
+  "optOss": "शुरू में Oss!",
+  "optOssHint": "नई लड़ाई शुरू होने से पहले बड़ा Oss! धड़कता है।"
 }

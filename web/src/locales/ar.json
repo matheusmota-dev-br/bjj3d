@@ -145,5 +145,14 @@
   "beltBlue": "أزرق",
   "beltPurple": "بنفسجي",
   "beltBrown": "بني",
-  "beltBlack": "أسود"
+  "beltBlack": "أسود",
+  "camDirected": "موجّهة",
+  "nextShort": "التالي",
+  "moreMoves": "{n} أخرى",
+  "optImpact": "لحظة الإخضاع",
+  "optImpactHint": "يبطئ ويقترب عندما يبلغ القفل نطاق الإصابة.",
+  "endsAt": "ينتهي في",
+  "startsAt": "يبدأ في",
+  "optOss": "Oss! في البداية",
+  "optOssHint": "Oss! كبيرة نابضة قبل أن يبدأ نزال جديد."
 }
