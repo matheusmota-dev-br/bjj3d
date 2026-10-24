@@ -2,17 +2,26 @@
 <html>
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Source+Sans+3:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Source+Sans+3:wght@400;600&display=swap">
 <style>
-  html, body { margin: 0; width: 1280px; height: 320px; overflow: hidden; background: #0e1726 }
-  img { position: absolute; right: -40px; top: -140px; width: 1000px; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%); mask-image: linear-gradient(90deg, transparent 0, #000 22%) }
-  .name { position: absolute; left: 72px; top: 92px; font: 700 104px/1 "Barlow Condensed", sans-serif; letter-spacing: .02em; color: #eaf2ff }
-  .tag { position: absolute; left: 76px; top: 212px; font: 22px/1.35 "Source Sans 3", sans-serif; color: #8fa6c4; width: 380px }
+  html, body { margin: 0; width: 1280px; height: 320px; overflow: hidden; background: #0e1726; font-family: "Source Sans 3", sans-serif }
+  /* a soft spotlight behind the fighters */
+  .light { position: absolute; left: 560px; top: -140px; width: 820px; height: 600px; background: radial-gradient(closest-side, rgb(95 180 255 / .22), transparent); }
+  img.render { position: absolute; right: -30px; top: -165px; width: 1000px; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%); mask-image: linear-gradient(90deg, transparent 0, #000 22%) }
+  img.icon { position: absolute; left: 72px; top: 78px; width: 72px; height: 72px; border-radius: 16px; box-shadow: 0 6px 24px rgb(0 0 0 / .5) }
+  .name { position: absolute; left: 164px; top: 70px; font: 700 96px/1 "Barlow Condensed", sans-serif; letter-spacing: .02em; color: #eaf2ff }
+  .tag { position: absolute; left: 76px; top: 190px; font: 24px/1.35 "Source Sans 3", sans-serif; color: #b7c6da; width: 420px }
+  .tag b { color: #ff6b85; font-weight: 600 }
+  .ring { position: absolute; left: 96px; top: 262px; display: flex; gap: 14px; align-items: center; font: 600 15px "Source Sans 3", sans-serif; color: #8fa6c4; letter-spacing: .04em; text-transform: uppercase }
+  .ring i { width: 10px; height: 10px; border-radius: 50%; display: inline-block }
 </style>
 </head>
 <body>
-  <img src="../docs/render.png" alt="">
+  <div class="light"></div>
+  <img class="render" src="../docs/render.png" alt="">
+  <img class="icon" src="icon.svg" alt="">
   <div class="name">bjj-3d</div>
-  <div class="tag">jiu-jitsu in 3D, with the load on the attacked joint</div>
+  <div class="tag">jiu-jitsu in 3D, with <b>the load on the attacked joint</b></div>
+  <div class="ring"><i style="background:#f2b544"></i>amber <i style="background:#5fb4ff"></i>blue <i style="background:#ff3355"></i>danger</div>
 </body>
 </html>

@@ -1,6 +1,7 @@
 // Draws the identity from the tool itself, with headless Chrome over the DevTools protocol:
 //
 //   docs/render.png                 a frame of the knee-on-belly armbar, interface hidden
+//                                   (settings cleared first, so the saved look does not leak in)
 //   docs/banner.png                 tools/banner.html (name, tagline, the render)
 //   web/public/apple-touch-icon.png tools/icon.svg at 180 px
 //   web/public/favicon-32.png       web/public/favicon.svg at 32 px
@@ -52,19 +53,21 @@ const graph = JSON.parse(readFileSync(new URL("web/public/graph.json", root), "u
 const armbar = graph.transitions.findIndex((t) => t.line === 14237);
 
 await send("Page.enable");
+await send("Page.navigate", { url: `${base}/` });
+await sleep(2500);
+await evaluate("localStorage.clear()");
 await capture(`${base}/?frame=8#t/${armbar}`, 1280, 720, "docs/render.png", {
   settle: 6000,
   script: `(() => {
-    // The identity is the x-ray look on the dark grid, whatever the viewer's settings are.
-    document.querySelector('#look [data-value="hologram"]').click();
+    // The identity: solid mannequins on the dark grid, the directed camera, the lock lit.
+    document.querySelector('#look [data-value="solid"]').click();
     document.querySelector('#place [data-value="night"]').click();
+    document.querySelector('#camera [data-value="directed"]').click();
     document.querySelector("#help-ok").click();
     const style = document.createElement("style");
-    style.textContent = "#panel,.toolbar,.player,#risk,#angle,.menu,#help{display:none!important} body{grid-template-columns:1fr!important}";
+    style.textContent = "#panel,.top-left,.top-right,.player,#help,#vignette{display:none!important}";
     document.head.append(style);
     dispatchEvent(new Event("resize"));
-    const view = document.querySelector("#view");
-    for (let i = 0; i < 9; i++) view.dispatchEvent(new WheelEvent("wheel", { deltaY: -100, clientX: 640, clientY: 400, bubbles: true }));
   })()`,
 });
 await capture(pathToFileURL(new URL("tools/banner.html", root).pathname).href, 1280, 320, "docs/banner.png", { settle: 2500 });
