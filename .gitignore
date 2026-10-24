@@ -1,0 +1,5 @@
+.blender/
+node_modules/
+dist/
+.DS_Store
+web/public/graph.json
