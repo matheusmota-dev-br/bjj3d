@@ -1,0 +1,47 @@
+{
+  "id": "armlock-from-closed-guard",
+  "reviewed": false,
+  "names": {
+    "en": "Armbar setup from closed guard",
+    "pt-BR": "Montagem da chave de braço da guarda fechada"
+  },
+  "source": {
+    "grapplemap_line": 5658,
+    "from": "distance closed guard",
+    "to": "arm lock"
+  },
+  "steps": [
+    {
+      "frame": 0,
+      "text": {
+        "en": "Closed guard, opponent at a distance.",
+        "pt-BR": "Guarda fechada, adversário afastado."
+      }
+    },
+    {
+      "frame": 2,
+      "text": {
+        "en": "Control the arm and turn the hips to that side.",
+        "pt-BR": "Controle o braço e gire o quadril para o lado dele."
+      }
+    },
+    {
+      "frame": 4,
+      "text": {
+        "en": "Leg over the head, knees together.",
+        "pt-BR": "Perna por cima da cabeça, joelhos fechados."
+      }
+    },
+    {
+      "frame": 6,
+      "text": {
+        "en": "Leg over, hips turned: the lock is set, not finished.",
+        "pt-BR": "Perna por cima, quadril girado: a chave está montada, não finalizada."
+      }
+    }
+  ],
+  "note": {
+    "en": "GrappleMap's transition stops at the setup (elbow still bent about 50°); the finish is not in the data.",
+    "pt-BR": "A transição do GrappleMap para na montagem (cotovelo ainda dobrado, cerca de 50°); a finalização não está nos dados."
+  }
+}

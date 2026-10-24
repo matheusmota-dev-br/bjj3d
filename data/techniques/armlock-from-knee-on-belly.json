@@ -1,0 +1,43 @@
+{
+  "id": "armlock-from-knee-on-belly",
+  "reviewed": false,
+  "names": {
+    "en": "Armbar from knee on belly",
+    "pt-BR": "Chave de braço do joelho na barriga"
+  },
+  "source": {
+    "grapplemap_line": 14237,
+    "from": "knee on belly vs underhook",
+    "to": "arm bar w/ single leg over"
+  },
+  "steps": [
+    {
+      "frame": 0,
+      "text": {
+        "en": "Knee on belly; the opponent pushes with the near arm.",
+        "pt-BR": "Joelho na barriga; o adversário empurra com o braço de perto."
+      }
+    },
+    {
+      "frame": 3,
+      "text": {
+        "en": "Trap the arm and step the far leg around the head.",
+        "pt-BR": "Prenda o braço e passe a perna de longe em volta da cabeça."
+      }
+    },
+    {
+      "frame": 6,
+      "text": {
+        "en": "Sit close to the shoulder and fall back.",
+        "pt-BR": "Sente perto do ombro e caia para trás."
+      }
+    },
+    {
+      "frame": 8,
+      "text": {
+        "en": "Knees together, thumb up, hips rise against the elbow.",
+        "pt-BR": "Joelhos fechados, polegar para cima, quadril sobe contra o cotovelo."
+      }
+    }
+  ]
+}

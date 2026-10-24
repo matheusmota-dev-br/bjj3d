@@ -1,0 +1,12 @@
+{
+  "upperArm": 0.048,
+  "foreArm": 0.03,
+  "thigh": 0.069,
+  "shin": 0.044,
+  "chest": 0.124,
+  "abdomen": 0.147,
+  "pelvis": 0.085,
+  "hand": 0.054,
+  "head": 0.075,
+  "foot": 0.029
+}
