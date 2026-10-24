@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- two limbs crossed in a lock, blue and amber like the fighters, the joint lit where they meet -->
+  <defs>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="joint"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#ff4d6d"/><stop offset="1" stop-color="#ff4d6d" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0b1220"/>
+  <g filter="url(#glow)" fill="none" stroke-linecap="round">
+    <path d="M22 98 C40 74 58 64 64 64 C78 64 92 48 104 26" stroke="#5fb4ff" stroke-width="13" stroke-opacity=".55"/>
+    <path d="M22 98 C40 74 58 64 64 64 C78 64 92 48 104 26" stroke="#5fb4ff" stroke-width="2.5"/>
+    <path d="M24 30 C46 40 56 58 64 64 C74 72 88 88 106 100" stroke="#f2b544" stroke-width="13" stroke-opacity=".5"/>
+    <path d="M24 30 C46 40 56 58 64 64 C74 72 88 88 106 100" stroke="#f2b544" stroke-width="2.5"/>
+  </g>
+  <circle cx="64" cy="64" r="16" fill="url(#joint)"/>
+</svg>
