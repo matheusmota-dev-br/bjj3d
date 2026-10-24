@@ -65,6 +65,19 @@ export function encodePose(p: Pose): string {
   return out;
 }
 
+/** A block in the file's own layout: description, tags, properties, refs, 4 lines per pose. */
+export function formatBlock(b: Pick<Block, "description" | "tags" | "properties" | "refs" | "poses">): string {
+  const lines = [...b.description];
+  if (b.tags.length) lines.push("tags: " + b.tags.join(" "));
+  if (b.properties.length) lines.push("properties: " + b.properties.join(" "));
+  for (const r of b.refs) lines.push("ref: " + r);
+  for (const p of b.poses) {
+    const e = encodePose(p);
+    for (let i = 0; i < e.length; i += 69) lines.push("    " + e.slice(i, i + 69));
+  }
+  return lines.join("\n") + "\n";
+}
+
 export function parse(text: string): Block[] {
   const lines = text.split("\n");
   const blocks: Block[] = [];

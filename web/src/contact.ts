@@ -52,7 +52,7 @@ function capsules(r: Radii): Seg[] {
 }
 
 /** Bones kept at their length: the segments GrappleMap draws. */
-const BONES: [Joint, Joint][] = [
+export const BONES: [Joint, Joint][] = [
   ["Head", "Neck"], ["Neck", "Core"], ["Core", "LeftHip"], ["Core", "RightHip"], ["LeftHip", "RightHip"],
   ["LeftShoulder", "RightShoulder"], ["LeftShoulder", "Neck"], ["RightShoulder", "Neck"],
   ...(["Left", "Right"] as const).flatMap((s): [Joint, Joint][] => [
