@@ -40,11 +40,20 @@ and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you c
   These are angles and distances, not forces: GrappleMap has neither forces nor timing.
   [docs/validation.md](docs/validation.md) checks them against every finish in the database
   (15 of 20 reach the danger range; the other five never get there in the animation).
-- **Interface**: the panel shows what is on screen, the moves you can make next (they
-  continue from where the current one ends) and three ways in: techniques explained step by
-  step, finishes, and positions. Settings float over the view: look, place, camera (free,
-  side, above, a fighter's eyes), speed, and options (repeat, other side, show one fighter,
-  joint angle). A short "how to use" shows on the first visit.
+- **Interface**: the move fills the screen. The camera is directed: for each keyframe it
+  picks the angle that keeps the attacked joint in sight, shows the two bodies side by side
+  rather than one behind the other, and stays near the previous angle; it glides there and
+  orbits slowly while playing. Grabbing the view hands the camera over ("Free"); a chip
+  gives it back. Under the move, a filmstrip holds a real frame of every step (or keyframe):
+  click one to jump, drag across to scrub; the last cell offers the next move, which
+  continues from where this one ends. A ring marks the attacked joint while the lock is on.
+  A new fight opens with a big "Oss!" and a pulse, held for a second (not when chaining the
+  next move). At the finishing moment (the first frame in the danger range while playing) time slows to
+  an eighth, the camera pushes in on the joint, the edges darken and a pulse leaves the ring;
+  it can be turned off in the options. The panel (what is on screen with its current frame,
+  next moves, techniques, finishes and positions, each with a picture of where it ends)
+  slides over the view from "Browse"; look, place, other cameras, speed and options sit
+  behind ⚙. A short "how to use" shows on the first visit.
 - **Fighters**: each one can be customized on a screen of its own, standing alone: build
   (slim to sturdy) and belt (white, blue, purple, brown, black). The contact solver is tuned
   to the standard build, so a much sturdier one may overlap a little more.
@@ -74,13 +83,15 @@ npm run dev
 
 `npm run build` writes a static site to `web/dist`. Links: `#p/<n>` opens position *n*,
 `#t/<n>` transition *n* (`#t/<n>r` backwards), and `?frame=<k>` opens paused at keyframe *k*.
+Keys: space plays and pauses, the arrows step.
 For checking: `?debug=1` draws the solved stick figures over the mannequins, and
 `?graph=<file>` loads another build of the data.
 
 ## Layout
 
 ```
-data/grapplemap/       GrappleMap database, unchanged (public domain)
+data/grapplemap/       GrappleMap database, unchanged (public domain), and bjj-3d.txt,
+                       our additions in the same format (written by the local editor)
 data/techniques/       reviewed techniques: one JSON file per transition
 data/body/capsules.json  thickness of each body part (metres), shared by the mannequin and
                        the contact solver
@@ -97,6 +108,7 @@ web/src/
   i18n.ts, locales/    interface text, one JSON file per language
   viewer.ts            scene, playback, chaining, cameras
   data.ts, main.ts     graph, search and the page
+  editor.ts            the local editor (dev only; its server is a plugin in vite.config.ts)
 web/scripts/
   build-data.ts        GrappleMap + data/techniques -> solved poses -> web/public/graph.json
   validate.ts          writes docs/validation.md
@@ -119,6 +131,24 @@ web/scripts/
 `grapplemap_line` is where the transition starts in `GrappleMap.txt`; `npm run find -- "<name>"`
 lists candidates. The build checks that the line goes from `from` to `to`. Optional fields:
 `note` and `risk` (both `{en, pt-BR}`).
+
+## Adding positions and transitions (the local editor)
+
+The editor exists only in the dev server (`npm run dev`), never in a build: ⚙ → **✎ Editor**.
+It poses the two mannequins by dragging their joints (the big ball moves a whole body; bone
+lengths are kept), keeps a list of frames (duplicate, delete, mirror, swap, turn), and saves
+the block in GrappleMap's own format to `data/grapplemap/bjj-3d.txt`, which the data build
+merges with the original database. Saving rebuilds `graph.json` (a few seconds: solved poses
+are cached in `web/.cache`) and reloads the page on the new block.
+
+It starts from a neutral position (the best-connected position of each family: standing,
+closed guard, half guard, butterfly, combat base, side control, knee on belly, mount,
+north-south, turtle, back), from any position found by name, from a copy of any transition
+(its keyframes, tags and references), or from the frame on screen. The drawer says which
+existing position each end matches, so a new transition connects into the graph; "Append
+an existing position as the last frame" ends it on one. Tags use
+GrappleMap's vocabulary (`closed_guard`, `armbar`, `top_kneeling`…); a submission tag is
+what lights the attacked joint.
 
 ## Tests
 
