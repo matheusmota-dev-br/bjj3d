@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bjj-3d</title>
+<meta name="description" content="Brazilian jiu-jitsu positions and transitions in 3D, with the load on the attacked joint.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Source+Sans+3:wght@400;600;700&display=swap">
+</head>
+<body>
+<aside id="panel">
+  <div class="top">
+    <div class="top-row">
+      <a class="name" href="#">bjj-3d</a>
+      <div class="prefs">
+        <select id="lang"></select>
+        <button id="theme" class="chip-btn round"></button>
+      </div>
+    </div>
+    <input id="search" type="search" autocomplete="off" spellcheck="false">
+  </div>
+  <div id="panel-body"></div>
+  <p id="about" class="muted"></p>
+</aside>
+<main id="stage">
+  <canvas id="view"></canvas>
+
+  <button id="menu" class="float-btn menu"></button>
+
+  <div id="toolbar" class="toolbar">
+    <button id="toolbar-toggle" class="float-btn toolbar-toggle"></button>
+    <div class="toolbar-body">
+      <div class="group" id="look"></div>
+      <div class="group" id="place"></div>
+      <div class="group"><span class="label" id="camera-label"></span><div class="seg" id="camera"></div></div>
+      <div class="group" id="speed"></div>
+      <div class="group options">
+        <button id="options-btn" class="chip-btn" aria-expanded="false"></button>
+        <div id="options" class="popover" hidden></div>
+      </div>
+      <button id="fighters-btn" class="chip-btn"></button>
+      <button id="help-btn" class="chip-btn round" aria-label="?">?</button>
+    </div>
+  </div>
+
+  <aside id="customizer" class="customizer" hidden>
+    <div class="cz-head"><h2 id="cz-title"></h2><button id="cz-done" class="chip-btn"></button></div>
+    <div class="tabs" id="cz-tabs"></div>
+    <div id="cz-body" class="cz-body"></div>
+  </aside>
+
+  <p id="risk"></p>
+  <div id="angle"></div>
+
+  <div id="help" class="help" hidden>
+    <h2 id="help-title"></h2>
+    <ol id="help-steps"></ol>
+    <button id="help-ok" class="primary"></button>
+  </div>
+
+  <div class="player">
+    <p id="caption"></p>
+    <div class="bar">
+      <button id="prev" class="icon-btn">⏮</button>
+      <button id="play" class="icon-btn play">▶</button>
+      <button id="next" class="icon-btn">⏭</button>
+      <div class="track"><div id="ticks"></div><input id="time" type="range" min="0" step="0.001" value="0"></div>
+    </div>
+  </div>
+</main>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
