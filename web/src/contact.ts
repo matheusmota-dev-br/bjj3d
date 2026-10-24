@@ -173,7 +173,8 @@ function separate(a: P, acc: Acc, m: Model, i: number, k: number, stiffness: num
     [c1.a, (1 - s) * invMass(c1.ja), 1], [c1.b, s * invMass(c1.jb), 1],
     [c2.a, (1 - t) * invMass(c2.ja), -1], [c2.b, t * invMass(c2.jb), -1],
   ] as const;
-  const sum = w.reduce((x, [, wi]) => x + wi * wi, 0) || 1;
+  // Never zero: the weights of each capsule add up to its endpoints' inverse masses.
+  const sum = w.reduce((x, [, wi]) => x + wi * wi, 0);
   const push = ((min - dist) * stiffness) / sum;
   for (const [j, wi, sign] of w) add(acc, j, nx * push * wi * sign, ny * push * wi * sign, nz * push * wi * sign);
   return min - dist;
@@ -184,7 +185,7 @@ function keepLengths(a: P, acc: Acc, lengths: Float64Array, bones: [number, numb
     const dx = a[q] - a[p], dy = a[q + 1] - a[p + 1], dz = a[q + 2] - a[p + 2];
     const d = Math.hypot(dx, dy, dz);
     if (d < 1e-9) return;
-    const k = (d - lengths[b]) / (d * (mp + mq || 1));
+    const k = (d - lengths[b]) / (d * (mp + mq));
     add(acc, p, dx * k * mp, dy * k * mp, dz * k * mp);
     add(acc, q, -dx * k * mq, -dy * k * mq, -dz * k * mq);
   });

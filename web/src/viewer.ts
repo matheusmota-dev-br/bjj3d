@@ -117,7 +117,7 @@ export class Viewer {
     canvas.addEventListener("pointerdown", () => { if (this.cameraMode === "directed" && this.studio === null) this.onGrab(); });
     addEventListener("resize", () => this.resize());
     this.resize();
-    this.renderer.setAnimationLoop(() => this.tick());
+    this.renderer.setAnimationLoop(() => this.step(Math.min(this.clock.getDelta(), 0.1)));
   }
 
   /** Draws GrappleMap's stick figures over the mannequins. */
@@ -487,8 +487,8 @@ export class Viewer {
 
   private lastDt = 0.016;
 
-  private tick() {
-    const dt = Math.min(this.clock.getDelta(), 0.1);
+  /** Advances the clock by dt seconds and draws a frame (the animation loop calls it). */
+  step(dt: number) {
     this.lastDt = dt;
     if (this.studio !== null) return this.tickStudio(dt);
     if (!this.frames.length) return;
@@ -548,6 +548,8 @@ export class Viewer {
     this.updateCamera(l, envelope);
     if (this.target) {
       const { player, side, kind } = this.target;
+      // The camera moved this frame; project with where it is now, not where it was drawn last.
+      this.camera.updateMatrixWorld();
       const s = glowPoint(kind, l[player], side).project(this.camera);
       joint = { x: ((s.x + 1) / 2) * this.canvas.clientWidth, y: ((1 - s.y) / 2) * this.canvas.clientHeight };
     }

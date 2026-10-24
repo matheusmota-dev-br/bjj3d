@@ -9,17 +9,24 @@
     "prebuild": "node scripts/build-data.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test src/*.test.ts",
+    "test": "vitest run --coverage",
     "validate": "node scripts/validate.ts",
-    "find": "node scripts/find.ts"
+    "find": "node scripts/find.ts",
+    "test:watch": "vitest",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "three": "^0.181.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.2",
     "@types/three": "^0.181.0",
+    "@vitest/browser-playwright": "^4.1.12",
+    "@vitest/coverage-istanbul": "^4.1.12",
+    "playwright": "^1.64.1",
     "typescript": "^5.9.3",
-    "vite": "^7.3.7"
+    "vite": "^7.3.7",
+    "vitest": "^4.1.12"
   }
 }

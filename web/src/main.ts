@@ -7,7 +7,7 @@ import { BELT_COLORS, BELTS, type Belt } from "./mannequin.ts";
 import { COLORS, Viewer, type CameraMode, type StudioFocus, type Style } from "./viewer.ts";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...kids: (Node | string | null)[]) {
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown>, ...kids: (Node | string | null)[]) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
     if (k === "style" || k.startsWith("aria-") || k.startsWith("data-")) e.setAttribute(k, String(v));
@@ -16,6 +16,9 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string,
   e.append(...kids.filter((x): x is Node | string => x !== null));
   return e;
 }
+
+/** Reloads the page. An object so tests can replace it: location.reload itself cannot be. */
+export const page = { reload: location.reload.bind(location) };
 
 // --- settings kept per viewer (they only make the page nicer; it works without them)
 
@@ -117,7 +120,7 @@ langSel.title = t("language");
 for (const l of LANGS) langSel.append(el("option", { value: l, textContent: langName(l) }));
 langSel.value = settings.lang;
 // Every text on the page changes; reloading is simpler than redrawing each one.
-langSel.onchange = () => { settings.lang = langSel.value; save(); location.reload(); };
+langSel.onchange = () => { settings.lang = langSel.value; save(); page.reload(); };
 const themeBtn = $<HTMLButtonElement>("#theme");
 themeBtn.onclick = () => { settings.theme = settings.theme === "dark" ? "light" : "dark"; changed(); };
 
@@ -467,7 +470,7 @@ function snapImage(r: Ref) {
 }
 
 /** A clickable row: a picture of where it ends, the name, what it is, and a badge for finishes. */
-function row(r: Ref, opts: { chain?: boolean; sub?: string } = {}) {
+function row(r: Ref, opts: { chain?: boolean; sub?: string }) {
   const kind = kindOf(r);
   const a = el("a", { href: `#${refKey(r)}` },
     el("span", { className: "pic" }, snapImage(r)),
