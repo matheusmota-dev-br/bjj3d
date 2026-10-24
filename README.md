@@ -154,9 +154,22 @@ what lights the attacked joint.
 
 ```
 cd web
-npm test           # reader, position matching, contact solver, joint readings
+npm test           # unit tests with coverage (must stay at 100%)
+npm run e2e        # end-to-end: the app driven like a person would
 npm run validate   # regenerates docs/validation.md
 ```
+
+- **Unit** (Vitest): plain modules run in Node; anything that needs WebGL or the DOM
+  (`*.browser.test.ts`) runs in headless Chromium. Coverage is measured over both, over all of
+  `web/src`, and the run fails below 100% of statements, branches, functions and lines.
+- **End-to-end** (Playwright, `web/e2e/`): a dedicated dev server on port 5181, Chromium in
+  new headless mode (WebGL on the GPU when there is one). It covers the first visit and Oss!,
+  the filmstrip and keyboard, the finishing moment, chaining, the panel, settings kept across
+  reloads, the camera chip, theme and language, the fighters screen, a phone-sized screen, the
+  local editor from a neutral position to a saved, rebuilt and playable move, and a
+  production build that must carry no editor. The editor saves into a scratch copy
+  (`BJJ3D_ADDITIONS`, `BJJ3D_GRAPH`); the suite fails if `data/grapplemap/bjj-3d.txt` or
+  `web/public/graph.json` changed.
 
 ## Sources and license
 

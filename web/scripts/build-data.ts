@@ -5,6 +5,8 @@
 // them do not sink into each other, and transitions get in-between frames. Solved poses
 // are cached in web/.cache by their input, so a rebuild after an edit takes seconds.
 //   node scripts/build-data.ts
+// BJJ3D_ADDITIONS and BJJ3D_GRAPH replace the additions file and the output (the end-to-end
+// tests point them at a scratch copy, so they never touch the real data).
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { ContactSolver, SUBSTEPS } from "../src/contact.ts";
 import { buildGraph, encodePose, parse } from "../src/grapplemap.ts";
@@ -12,7 +14,9 @@ import { submissionKind } from "../src/metrics.ts";
 import type { GraphFile, TechniqueFile } from "../src/data.ts";
 
 const root = new URL("../../", import.meta.url);
-const additionsFile = new URL("data/grapplemap/bjj-3d.txt", root);
+import { pathToFileURL } from "node:url";
+const additionsFile = process.env.BJJ3D_ADDITIONS ? pathToFileURL(process.env.BJJ3D_ADDITIONS) : new URL("data/grapplemap/bjj-3d.txt", root);
+const graphFile = process.env.BJJ3D_GRAPH ? pathToFileURL(process.env.BJJ3D_GRAPH) : new URL("web/public/graph.json", root);
 const text = readFileSync(new URL("data/grapplemap/GrappleMap.txt", root), "utf8") + "\n" + (existsSync(additionsFile) ? readFileSync(additionsFile, "utf8") : "");
 const graph = buildGraph(parse(text));
 const solver = new ContactSolver(JSON.parse(readFileSync(new URL("data/body/capsules.json", root), "utf8")));
@@ -58,7 +62,8 @@ for (const file of readdirSync(new URL("data/techniques/", root)).filter((f) => 
   out.techniques[i] = spec;
 }
 
-writeFileSync(new URL("web/public/graph.json", root), JSON.stringify(out));
+mkdirSync(new URL(".", graphFile), { recursive: true });
+writeFileSync(graphFile, JSON.stringify(out));
 mkdirSync(new URL("web/.cache/", root), { recursive: true });
 writeFileSync(cacheFile, JSON.stringify(cache));
 const kinds = out.transitions.filter((t) => t.kind).length;
