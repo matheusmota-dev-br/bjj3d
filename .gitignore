@@ -10,4 +10,4 @@ web/playwright-report/
 web/public/e2e/
 web/src/__screenshots__/
 web/src/__image_snapshots__/
-web/.vitest-attachments/web/.vitest-attachments/
+web/.vitest-attachments/
