@@ -52,9 +52,9 @@ const S = {
   bottom: { en: "bottom", "pt-BR": "de baixo" },
   both: { en: "either", "pt-BR": "qualquer" },
 } satisfies Record<string, Text>;
-const t = (k: keyof typeof S, vars: Record<string, string> = {}) => (S[k][currentLang() === "pt-BR" ? "pt-BR" : "en"]).replace(/\{(\w+)\}/g, (_, v) => vars[v] ?? "");
+const t = (k: keyof typeof S, vars: Record<string, string> = {}) => (S[k][currentLang() === "pt-BR" ? "pt-BR" : "en"]).replace(/\{(\w+)\}/g, (_, v) => vars[v]);
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...kids: (Node | string | null)[]) {
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown>, ...kids: (Node | string | null)[]) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
     if (k === "style" || k.startsWith("aria-") || k.startsWith("data-")) e.setAttribute(k, String(v));
@@ -65,6 +65,8 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string,
 }
 
 const COLORS = ["#f2b544", "#5fb4ff"];
+/** What the editor does to the page itself; tests replace it. */
+export const host = { reload: location.reload.bind(location) };
 const clone = (p: Pose): Pose => JSON.parse(JSON.stringify(p));
 const xzAngle = (v: Vec3) => Math.atan2(v[0], v[2]);
 function yrot(v: Vec3, a: number): Vec3 { const c = Math.cos(a), s = Math.sin(a); return [c * v[0] - s * v[2], v[1], s * v[0] + c * v[2]]; }
@@ -79,7 +81,6 @@ function relax(player: Record<Joint, Vec3>, lengths: Map<string, number>, pinned
       const len = Math.hypot(...d) || 1e-6;
       const k = (len - L) / len;
       const wa = a === pinned ? 0 : b === pinned ? 1 : 0.5, wb = 1 - wa;
-      if (a === pinned && b === pinned) continue;
       for (let i = 0; i < 3; i++) { pa[i] += d[i] * k * wa; pb[i] -= d[i] * k * wb; }
     }
     for (const j of JOINTS) if (j !== pinned && player[j][1] < 0.02) player[j][1] = 0.02;
@@ -203,7 +204,8 @@ export function openEditor(ctx: { viewer: Viewer; db: Db; onClose: () => void })
   function appendPosition(i: number) {
     const a = db.poses({ type: "p", i })[0];
     const b = block.poses[block.poses.length - 1];
-    const angle = xzAngle([b[1].Head[0] - b[0].Head[0], 0, b[1].Head[2] - b[0].Head[2]]) - xzAngle([a[1].Head[0] - a[0].Head[0], 0, a[1].Head[2] - a[0].Head[2]]);
+    // yrot turns a heading by -angle, so the angle is the chosen position's heading minus the frame's.
+    const angle = xzAngle([a[1].Head[0] - a[0].Head[0], 0, a[1].Head[2] - a[0].Head[2]]) - xzAngle([b[1].Head[0] - b[0].Head[0], 0, b[1].Head[2] - b[0].Head[2]]);
     const r0 = yrot(a[0].Head, angle);
     const offset: Vec3 = [b[0].Head[0] - r0[0], 0, b[0].Head[2] - r0[2]];
     block.poses.push(reorient(a, { offset, angle, mirror: false, swapPlayers: false }));
@@ -222,7 +224,7 @@ export function openEditor(ctx: { viewer: Viewer; db: Db; onClose: () => void })
     const out = [...blocks.map((b) => formatBlock(b)), formatBlock(block)].join("\n");
     const res = await (await fetch("/__editor/save", { method: "POST", body: out })).json();
     status.textContent = res.ok ? t("saved") : res.log;
-    if (res.ok) { sessionStorage.setItem("bjj-3d.editor", block.description[0]); setTimeout(() => location.reload(), 800); }
+    if (res.ok) { sessionStorage.setItem("bjj-3d.editor", block.description[0]); setTimeout(() => host.reload(), 800); }
   }
 
   const status = el("p", { className: "muted" }, t("hint"));
