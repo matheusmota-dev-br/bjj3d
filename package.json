@@ -1,0 +1,42 @@
+{
+  "name": "bjj3d",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/grapplemap",
+    "packages/metrics",
+    "packages/data",
+    "packages/three",
+    "packages/editor",
+    "packages/ui",
+    "apps/web",
+    "apps/storybook"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @bjj3d/web",
+    "build": "npm run build -w @bjj3d/web",
+    "preview": "npm run preview -w @bjj3d/web",
+    "data": "npm run build-graph -w @bjj3d/data",
+    "validate": "npm run validate -w @bjj3d/data",
+    "find": "npm run find -w @bjj3d/data --",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "e2e": "npm run e2e -w @bjj3d/web",
+    "storybook": "npm run dev -w @bjj3d/storybook",
+    "build-storybook": "npm run build -w @bjj3d/storybook"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.2",
+    "@types/three": "^0.181.0",
+    "@vitest/browser-playwright": "^4.1.12",
+    "@vitest/coverage-istanbul": "^4.1.12",
+    "playwright": "^1.64.1",
+    "three": "^0.181.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7",
+    "vitest": "^4.1.12"
+  }
+}

@@ -1,0 +1,40 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Badge from "./Badge.stories.ts";
+
+<Meta of={Badge} />
+
+# Badge, dot, swatch and eyebrow
+
+Four tiny atoms that say *what kind of thing* is next to them.
+
+## Kind badge
+
+The submission a move ends in: "Elbow lock", "Choke". It is red, the colour of the load on a
+joint, and it only appears on moves that finish with a submission: in the title card, on
+the panel's rows and on the now card's picture.
+
+<Canvas of={Badge.KindBadge} />
+
+## Fighter dot
+
+A fighter's colour before a name: "● Amber moves", the fighter tabs. Amber and blue always
+mean the same two people (see **Foundations/Tokens**).
+
+<Canvas of={Badge.FighterDots} />
+
+## Swatch
+
+A colour sample on a choice, as on the belt buttons.
+
+<Canvas of={Badge.Swatches} />
+
+## Eyebrow
+
+The small capitalized label over each section of the panel: NOW, NEXT, EXPLORE. It names
+the section; it is never a heading people read as content.
+
+<Canvas of={Badge.Eyebrow} />
+
+```ts
+import { dot, eyebrow, kindBadge, swatch } from "@bjj3d/ui";
+```

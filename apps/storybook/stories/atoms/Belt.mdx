@@ -1,0 +1,37 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Belt from "./Belt.stories.ts";
+
+<Meta of={Belt} />
+
+# Belt
+
+The belt is a band around the mannequin's waist with a knot in front. In the viewer it is
+also the simplest piece of identity a fighter has: the fighters screen of the site lets
+each one pick theirs.
+
+<Canvas of={Belt.Belt} />
+<Controls of={Belt.Belt} />
+
+## Built-ins
+
+`BELTS` lists the five adult belts (white, blue, purple, brown, black) and `BELT_COLORS`
+gives each one its colour. The lit looks (solid, wood) keep the belt's own colour; the x-ray
+look draws it in the fighter's colour like the rest of the body.
+
+## A belt of your own
+
+A belt is a colour by id. Pass more in the viewer's options and use the id in a style:
+
+```ts
+const viewer = new Viewer(canvas, { belts: { coral: "#e8735a" } });
+viewer.setStyle(0, { build: 1, belt: "coral" });
+```
+
+An id the viewer does not know falls back to white.
+
+<Canvas of={Belt.Custom} />
+
+## Not yet
+
+Stripes (degrees) and other attire (gi, rash guard) are planned as attire definitions; see
+`docs/library-plan.md`.

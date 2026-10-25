@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/matheusmota-dev-br/bjj3d/schemas/capsules/v1",
+  "title": "Body capsules",
+  "description": "Radii in metres of the capsules the contact solver gives each body part (data/body/capsules.json).",
+  "type": "object",
+  "required": ["upperArm", "foreArm", "hand", "thigh", "shin", "foot", "chest", "abdomen", "pelvis", "head"],
+  "additionalProperties": false,
+  "properties": {
+    "upperArm": { "$ref": "#/$defs/radius" },
+    "foreArm": { "$ref": "#/$defs/radius" },
+    "hand": { "$ref": "#/$defs/radius" },
+    "thigh": { "$ref": "#/$defs/radius" },
+    "shin": { "$ref": "#/$defs/radius" },
+    "foot": { "$ref": "#/$defs/radius" },
+    "chest": { "$ref": "#/$defs/radius" },
+    "abdomen": { "$ref": "#/$defs/radius" },
+    "pelvis": { "$ref": "#/$defs/radius" },
+    "head": { "$ref": "#/$defs/radius" }
+  },
+  "$defs": { "radius": { "type": "number", "exclusiveMinimum": 0, "maximum": 0.5 } }
+}

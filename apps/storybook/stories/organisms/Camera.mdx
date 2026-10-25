@@ -1,0 +1,44 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Camera from "./Camera.stories.ts";
+
+<Meta of={Camera} />
+
+# Camera
+
+Where you watch from. Grappling is hard to read from a bad angle: one body hides the other,
+and the joint that matters is on the far side. The default camera is *directed* to solve
+that.
+
+## Directed
+
+For each keyframe the camera picks an angle that:
+
+1. keeps the attacked joint in sight (in a submission),
+2. shows the two bodies side by side rather than one behind the other,
+3. stays near the previous angle, so it does not jump around.
+
+It glides from one angle to the next and orbits slowly while playing. In the site, grabbing
+the view hands the camera over ("Free"), and a chip gives it back.
+
+<Canvas of={Camera.Directed} />
+
+## Fixed angles
+
+**Side** and **top** are fixed views around the pair. **Through the eyes** (`eyes0`,
+`eyes1`) puts the camera in a fighter's head: what that person sees of the technique.
+
+<Canvas of={Camera.Side} />
+<Canvas of={Camera.Top} />
+<Canvas of={Camera.ThroughTheEyes} />
+
+<Controls of={Camera.Directed} />
+
+## In code
+
+```ts
+viewer.setCamera("directed"); // "free" | "side" | "top" | "eyes0" | "eyes1"
+viewer.onGrab = () => { /* the person took the camera */ };
+```
+
+Cameras are not a registry yet: a new camera mode means a change to `viewer.ts`. See
+`docs/library-plan.md`.

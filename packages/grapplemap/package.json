@@ -1,0 +1,14 @@
+{
+  "name": "@bjj3d/grapplemap",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reader and writer for the GrappleMap text format, and its position graph.",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@bjj3d/core": "*"
+  }
+}

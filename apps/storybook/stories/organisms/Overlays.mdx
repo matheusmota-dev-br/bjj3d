@@ -1,0 +1,47 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Overlays from "./Overlays.stories.ts";
+
+<Meta of={Overlays} />
+
+# Overlays
+
+Three organisms that appear over the move for a moment and then get out of the way.
+
+## How to use
+
+Shown once, on the first visit: four short steps and one button. It can be opened again with
+**?** in the settings.
+
+<Canvas of={Overlays.HowToUse} />
+
+## Oss!
+
+The greeting that opens a new fight: a big "Oss!" and two rings, held for about a second
+before the move starts. It is not shown when chaining the next move (the fight goes on), and
+it can be turned off in the options. Pressing ▶ during it skips it.
+
+<Canvas of={Overlays.Oss} />
+
+```ts
+import { oss } from "@bjj3d/ui";
+const o = oss();
+o.start(1050, () => { viewer.playing = true; });
+```
+
+## The ring on the attacked joint
+
+While a lock is on, a ring sits on the attacked joint, following it on screen (the viewer
+reports the joint's screen position every frame). With the **degrees** option, the angle is
+written next to it. At the **finishing moment** (the first frame in the danger range) the ring
+burns, the edges of the view darken and a pulse leaves the joint. Click the story to send a
+pulse.
+
+<Canvas of={Overlays.AttackedJointRing} />
+<Controls of={Overlays.AttackedJointRing} />
+
+```ts
+import { attention } from "@bjj3d/ui";
+const ring = attention();
+ring.set(frame.joint, frame.impact > 0.2, "12°");
+if (frame.impactStart) ring.pulse(stage, frame.joint);
+```

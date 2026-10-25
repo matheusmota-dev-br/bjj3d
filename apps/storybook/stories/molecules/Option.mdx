@@ -1,0 +1,32 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Option from "./Option.stories.ts";
+
+<Meta of={Option} />
+
+# Option
+
+One option of the settings. Every option has a bold name **and a line saying what it does**:
+"Finishing moment" alone does not tell anyone they will get slow motion.
+
+## Toggle
+
+On or off: Loop, Mirror, Oss!, Finishing moment, Degrees.
+
+<Canvas of={Option.Toggle} />
+
+## Choice
+
+A few values, with a segmented control under the hint: Show (both, amber, blue), Through
+the eyes of (amber, blue).
+
+<Canvas of={Option.Choice} />
+
+```ts
+import { optionChoice, optionToggle } from "@bjj3d/ui";
+
+const loop = optionToggle({ label: "Loop", hint: "Play the move again when it ends.", get: () => s.loop, set: (on) => { s.loop = on; } });
+loop.refresh(); // after the setting changed elsewhere
+```
+
+Like the segmented control, an option keeps no state of its own: `get` and `set` reach the
+page's settings, and `refresh()` shows them again.

@@ -1,0 +1,64 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Viewer from "./Viewer.stories.ts";
+
+<Meta of={Viewer} />
+
+# Viewer
+
+Everything below put together, as a page that embeds it would use it: a canvas, two
+fighters, a place, the camera, playback, and the reading of the attacked joint.
+
+<Canvas of={Viewer.Viewer} />
+<Controls of={Viewer.Viewer} />
+
+## Embedding it
+
+```ts
+import { Db } from "@bjj3d/data";
+import { Viewer } from "@bjj3d/three";
+
+const db = await Db.load("graph.json");
+const viewer = new Viewer(canvas);
+const ref = { type: "t", i: 458, reversed: false } as const;
+viewer.show({ poses: db.poses(ref), substeps: db.file.substeps, kind: db.file.transitions[458].kind, chain: false });
+viewer.playing = true;
+```
+
+`graph.json` is built by `npm run data` (`@bjj3d/data`): every position and transition,
+with poses already solved for contact and in-between frames added. `substeps` says how many
+frames there are per keyframe gap.
+
+## Options
+
+```ts
+new Viewer(canvas, {
+  metrics,                      // a MetricRegistry (default: the six built-ins)
+  places: [competition],        // added to mat, gym, studio, night
+  looks: [outline],             // added to solid, wood, x-ray
+  belts: { coral: "#e8735a" },  // added to the five adult belts
+  preserveDrawingBuffer: false, // true (default) only if you read pixels back
+});
+```
+
+## Playback
+
+| property | what it does |
+|---|---|
+| `playing`, `time`, `speed`, `loop` | the clock, in keyframes |
+| `setMirrored(on)` | swaps left and right, to see a technique to the other side |
+| `impactEffect` | the finishing moment: slow motion and a push-in at the first frame in danger |
+| `onFrame(frame)` | called every frame with the time, the reading, the joint's screen position and the impact |
+| `show({ …, chain: true })` | continues from where the previous clip ended (the bodies stay where they were) |
+
+<Canvas of={Viewer.Mirrored} />
+<Canvas of={Viewer.SlowMotion} />
+
+## When you are done
+
+```ts
+viewer.dispose();
+```
+
+It stops the animation loop, removes the viewer's listeners, disposes every geometry,
+material and texture, and releases the WebGL context. Browsers allow about 16 live
+contexts per page, so a page that makes viewers must dispose them.

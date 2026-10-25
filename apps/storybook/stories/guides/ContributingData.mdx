@@ -1,0 +1,42 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Contributing positions and techniques" />
+
+# Contributing positions and techniques
+
+No code needed. The formats are documented as JSON Schemas in `@bjj3d/data/schemas/`.
+
+## A position or a transition
+
+New poses go in `data/grapplemap/bjj3d.txt`, in GrappleMap's own format. The easiest way
+to write them is the local editor: `npm run dev`, then ✎ in the panel. It saves the block
+and rebuilds `graph.json`.
+
+## A technique text
+
+A technique is a JSON file in `data/techniques/` over one transition: names, steps per
+keyframe, and notes, in English and any other language. Its format is
+`technique.schema.json`:
+
+```json
+{
+  "$schema": "../../packages/data/schemas/technique.schema.json",
+  "id": "armlock-from-closed-guard",
+  "reviewed": false,
+  "names": { "en": "Armbar setup from closed guard", "pt-BR": "Montagem da chave de braço da guarda fechada" },
+  "source": { "grapplemap_line": 5658, "from": "distance closed guard", "to": "arm lock" },
+  "steps": [{ "frame": 0, "text": { "en": "Closed guard, opponent at a distance." } }]
+}
+```
+
+`reviewed` stays `false` until someone who knows the technique has read it; until then the
+site marks the text as a draft.
+
+## The formats
+
+| schema | file |
+|---|---|
+| `graph.schema.json` | `graph.json`, what the viewer loads |
+| `technique.schema.json` | `data/techniques/*.json` |
+| `capsules.schema.json` | `data/body/capsules.json`, body thickness for the contact solver |
+| `text.schema.json` | a text in several languages, English always there |

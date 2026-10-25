@@ -1,0 +1,16 @@
+{
+  "name": "@bjj3d/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The two-player skeleton, pose operations and the contact solver. No dependencies.",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contact": "./src/contact.ts",
+    "./testing": "./src/testing/poses.ts"
+  },
+  "devDependencies": {
+    "@bjj3d/grapplemap": "*"
+  }
+}

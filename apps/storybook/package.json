@@ -1,0 +1,23 @@
+{
+  "name": "@bjj3d/storybook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "storybook dev -p 6006",
+    "build": "npm run build -w @bjj3d/web && storybook build -o dist"
+  },
+  "dependencies": {
+    "@bjj3d/core": "*",
+    "@bjj3d/data": "*",
+    "@bjj3d/editor": "*",
+    "@bjj3d/metrics": "*",
+    "@bjj3d/three": "*",
+    "@bjj3d/ui": "*",
+    "three": "^0.181.0"
+  },
+  "devDependencies": {
+    "@storybook/addon-docs": "^10.6.3",
+    "@storybook/html-vite": "^10.6.3",
+    "storybook": "^10.6.3"
+  }
+}

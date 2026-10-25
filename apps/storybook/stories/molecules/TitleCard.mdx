@@ -1,0 +1,26 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as TitleCard from "./TitleCard.stories.ts";
+
+<Meta of={TitleCard} />
+
+# Title card
+
+Top left, over the view: what is on screen. The submission badge (if it is a finish), the
+name, and one line saying where it goes.
+
+<Canvas of={TitleCard.Move} />
+<Controls of={TitleCard.Move} />
+
+A position has no badge and says only "Position".
+
+<Canvas of={TitleCard.Position} />
+
+```ts
+import { titleCard } from "@bjj3d/ui";
+
+const card = titleCard();
+card.set({ kind: "Elbow lock", title: "Armbar from knee on belly", ends: "Move · from … to …" });
+```
+
+The card is made once and updated with `set` every time the move changes; it never
+re-renders the page around it.

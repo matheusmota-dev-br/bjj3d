@@ -1,0 +1,30 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Tabs from "./Tabs.stories.ts";
+
+<Meta of={Tabs} />
+
+# Tabs
+
+One of a few views, side by side. Click to switch.
+
+## Lists
+
+The panel's three ways in: **Techniques** (the reviewed ones, with written steps), **Finishes**
+(every move that ends in a submission) and **Positions** (all of them, by name).
+
+<Canvas of={Tabs.Lists} />
+
+## Fighters
+
+On the fighters screen, one tab per fighter, each with its colour dot.
+
+<Canvas of={Tabs.Fighters} />
+
+```ts
+import { tabs } from "@bjj3d/ui";
+
+tabs({ items: [{ value: 0, label: "Amber", color: COLORS[0] }, { value: 1, label: "Blue", color: COLORS[1] }], value: 0, onPick });
+```
+
+Tabs are drawn again when the choice changes (`onPick` redraws), with `role="tablist"` and
+`aria-selected` on the chosen tab.

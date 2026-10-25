@@ -1,0 +1,36 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Mannequin from "./Mannequin.stories.ts";
+
+<Meta of={Mannequin} />
+
+# Mannequin
+
+One fighter. A rigid, rounded piece between each pair of GrappleMap joints, a ball at each
+joint, blocks for the torso, a plain head with a small nose (it shows where the head
+faces), simple hands and feet, and a belt.
+
+<Canvas of={Mannequin.Mannequin} />
+<Controls of={Mannequin.Mannequin} />
+
+## Nothing deforms
+
+Every piece is placed straight from the 23 joints, every frame. There is no skin, no
+skinning and no rig: the figure *is* the data. If a limb looks wrong, the pose is wrong,
+and that is something you want to see.
+
+## Thickness and the contact solver
+
+GrappleMap's figures are stick figures. Given thickness, two of them would sink into each
+other. The pieces are exactly as thick as the capsules of the contact solver
+(`@bjj3d/core/contact`, sizes in `data/body/capsules.json`), so what the solver keeps
+apart is what you see kept apart.
+
+**Build** scales the pieces from slim (0.8) to sturdy (1.2). The solver is tuned for the
+standard build (1), so a much sturdier fighter may overlap a little more.
+
+## The data underneath
+
+Turn on **sticks** to draw GrappleMap's stick figure over the mannequin: the lines are the
+solved poses, the same numbers the mannequin is placed from.
+
+<Canvas of={Mannequin.WithSticks} />

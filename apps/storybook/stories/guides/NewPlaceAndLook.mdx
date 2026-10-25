@@ -1,0 +1,63 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/A new place, look or belt" />
+
+# A new place, look or belt
+
+The viewer takes them as options, added to the built-ins; the same id replaces a built-in.
+
+## A place
+
+```ts
+import * as THREE from "three";
+import { Viewer, type PlaceDef } from "@bjj3d/three";
+
+const competition: PlaceDef = {
+  id: "competition",
+  build(theme) {
+    const group = new THREE.Group();
+    // … floor, mat, lights: everything drawn in code, nothing downloaded
+    const ground = theme === "dark" ? "#1b2029" : "#d7dce3";
+    return { group, background: new THREE.Color(ground), fog: null, maxDistance: 12, light: theme === "light", hemi: 1.3 };
+  },
+};
+
+const viewer = new Viewer(canvas, { places: [competition] });
+viewer.setEnvironment("competition", "dark");
+```
+
+`light` tells the looks the surroundings are bright (the x-ray look tints instead of adding
+light); `maxDistance` keeps the camera inside rooms.
+
+## A look
+
+```ts
+import { Viewer, type LookDef } from "@bjj3d/three";
+
+const outline: LookDef = {
+  id: "outline",
+  paint(color, uniforms, beltColor, onLight) {
+    // body, joint and belt materials; `uniforms` carries the tension glow
+    return { body, joint, belt };
+  },
+  shadows: true,
+};
+
+new Viewer(canvas, { looks: [outline] }).setLook("outline");
+```
+
+## A belt
+
+A belt is a colour by id:
+
+```ts
+const viewer = new Viewer(canvas, { belts: { coral: "#e8735a" } });
+viewer.setStyle(0, { build: 1, belt: "coral" });
+```
+
+See **Atoms/Belt → Custom**.
+
+## When you are done
+
+Every story that holds a viewer must call `viewer.dispose()` when it goes away; the
+catalog's stages do it for you.

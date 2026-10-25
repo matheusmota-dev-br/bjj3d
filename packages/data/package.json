@@ -1,0 +1,28 @@
+{
+  "name": "@bjj3d/data",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The database as the viewer loads it (graph.json), and the scripts that build and check it.",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas/*": "./schemas/*"
+  },
+  "scripts": {
+    "build-graph": "node scripts/build-data.ts",
+    "validate": "node scripts/validate.ts",
+    "calibrate": "node scripts/calibrate.ts",
+    "find": "node scripts/find.ts"
+  },
+  "dependencies": {
+    "@bjj3d/core": "*",
+    "@bjj3d/grapplemap": "*",
+    "@bjj3d/metrics": "*"
+  },
+  "files": [
+    "src",
+    "schemas",
+    "scripts"
+  ]
+}

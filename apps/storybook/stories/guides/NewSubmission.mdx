@@ -1,0 +1,54 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/A new submission" />
+
+# A new submission
+
+A submission kind is a `SubmissionMetric`: which GrappleMap tags select it, how far its
+joint is pushed, where the danger range starts and where the glow sits. The six built-ins
+(elbow, shoulder, knee, knee twist, choke, neck crank) are written the same way.
+
+## 1. Write the metric
+
+A wrist lock, as an example: the wrist bent past its range.
+
+```ts
+import { builtinMetrics, createMetrics, flexion, type SubmissionMetric } from "@bjj3d/metrics";
+
+export const wristlock: SubmissionMetric = {
+  id: "wristlock",
+  tags: ["wristlock", "wrist_lock"],
+  sided: true,
+  danger: { value: 70, unit: "deg", when: "above" },
+  read(target, _opponent, side) {
+    const bend = flexion(target[`${side}Elbow`], target[`${side}Wrist`], target[`${side}Hand`]);
+    return { value: Math.min(1, Math.max(0, (bend - 40) / 40)), danger: bend > 70, measure: bend };
+  },
+  glowPoint: (target, side) => target[`${side}Wrist`],
+};
+
+export const metrics = createMetrics([...builtinMetrics, wristlock]);
+```
+
+`read` gets the attacked player's landmarks, the opponent's and the side. It returns a
+`value` from 0 to 1 (what the glow paints), whether it is in the `danger` range, and the
+`measure` behind it (degrees or metres). GrappleMap has no forces, so a reading is geometry
+only: an angle, a distance.
+
+## 2. Give it to the viewer
+
+```ts
+const viewer = new Viewer(canvas, { metrics });
+```
+
+## 3. Watch it
+
+Open **Templates/Viewer** on a transition with your tags and watch the **Reading** panel
+while it plays. Change the threshold until finishes reach it and everything else does not.
+
+## 4. Check it against the database
+
+`npm run validate` measures every kind in the registry over every transition and writes
+`docs/validation.md`: how many finishes reach the danger range, and how often it fires
+where nothing is attacked. A built-in submission goes into `builtinMetrics` in
+`packages/metrics/src/metrics.ts` with its validation numbers.

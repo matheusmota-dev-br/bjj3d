@@ -1,11 +1,23 @@
-# Plan: bjj-3d as a set of libraries
+# Plan: bjj3d as a set of libraries
 
-The viewer in `web/` becomes packages the community can use and extend, and the site
+The viewer that lived in `web/` becomes packages the community can use and extend, and the site
 becomes one more consumer of them. The focus stays on jiu-jitsu: the extension points are
 the ones jiu-jitsu itself needs (gi positions, more submissions, stripes on the belt), not a
 generic "sport" layer.
 
-Nothing here is built yet. `@bjj3d/` is a working name for the npm scope.
+`@bjj3d/` is the npm scope; nothing is published yet.
+
+## Status
+
+| phase | state |
+|---|---|
+| 1. Monorepo | done: `packages/*` and `apps/web`, npm workspaces, one Vitest run over everything |
+| 2. Lifecycle | done: `viewer.dispose()`, `preserveDrawingBuffer` option |
+| 3. Registries | metrics, places, looks and belts done; cameras and other attire (gi, rash guard) not yet |
+| 4. Storybook | done in `apps/storybook`: atomic levels (3D and interface), the editor mode, engine, guides, an MDX page per component, Reading panel, lazy WebGL stages; stories are not yet run as tests |
+| UI | done: `@bjj3d/ui` holds the site's interface as atoms, molecules, organisms and the cinema template, with `tokens.css` and `ui.css`; `apps/web` builds its page from them. The editor's own drawer is not split into components yet |
+| 5. Data | JSON Schemas in `packages/data/schemas/`; not yet checked in CI |
+| 6. Publish | not started: packages export their TypeScript sources and are `private` |
 
 ## Goals
 
@@ -27,7 +39,7 @@ Nothing here is built yet. `@bjj3d/` is a working name for the npm scope.
 ## Packages
 
 ```
-bjj-3d/
+bjj3d/
 ├─ packages/
 │  ├─ core/          @bjj3d/core        no dependencies
 │  ├─ grapplemap/    @bjj3d/grapplemap  core
@@ -66,7 +78,7 @@ Where today's files go:
 | `data.ts` (`Db`, file types) | `data` | |
 | `scripts/build-data.ts`, `validate.ts`, `calibrate.ts`, `find.ts` | `data/scripts` | they produce and check the data |
 | `i18n.ts`, `locales/`, `main.ts`, `style.css`, `index.html` | `apps/web` | |
-| `data/body/capsules.json` | `data` | read by `core/contact` callers, not by core itself |
+| `data/body/capsules.json` | stays in `data/body/` | read by `core/contact` callers, not by core itself; its schema is in `@bjj3d/data` |
 
 Each package has one `index.ts`; what it does not export is internal. Subpaths
 (`@bjj3d/core/contact`) keep heavy pieces out of a plain import.
@@ -83,7 +95,7 @@ Today each of these is a closed type or a constant table. Each becomes a registr
 | Look | outline, cel shading | `three` | `Look`, `paint()` in `materials.ts` |
 | Place | IBJJF competition area, garage gym | `three` | `Place`, `buildEnvironment()` in `environment.ts` |
 | Camera | referee's view, defender's view | `three` | `CameraMode` in `viewer.ts` |
-| Positions and transitions | gi positions, berimbolo variations | `data` | additions in `data/grapplemap/bjj-3d.txt` |
+| Positions and transitions | gi positions, berimbolo variations | `data` | additions in `data/grapplemap/bjj3d.txt` |
 | Technique texts | reviewed steps and notes, more languages | `data` | `data/techniques/` |
 | Interface language | native review of a locale | `apps/web` | `web/src/locales/` |
 

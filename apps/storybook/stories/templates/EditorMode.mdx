@@ -1,0 +1,49 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as EditorMode from "./EditorMode.stories.ts";
+
+<Meta of={EditorMode} />
+
+# Editor mode
+
+The site's second mode, for writing the database rather than watching it: new positions and
+transitions, posed by hand, saved in GrappleMap's own format.
+
+<Canvas of={EditorMode.Editor} />
+<Controls of={EditorMode.Editor} />
+
+## Where it lives
+
+On the site the editor exists **only on the dev server** (`npm run dev`, then ⚙ → ✎ Editor);
+it is never part of a build. It is a package of its own, `@bjj3d/editor`: the editor
+(`openEditor`) and a Vite plugin (`@bjj3d/editor/server`) with the two endpoints it saves
+through. Saving writes `data/grapplemap/bjj3d.txt` and rebuilds `graph.json`.
+
+In this catalog the endpoints are answered **in memory**: everything works, saving included,
+and nothing is written.
+
+## What it does
+
+- **Start** from a neutral position (the best-connected one of each family: standing, closed
+  guard, half guard, mount, back…), from any position found by name, from a copy of a
+  transition, or from the frame on screen.
+- **Pose** the two mannequins by dragging their joints. The big ball moves a whole body; bone
+  lengths are kept.
+- **Frames**: add, duplicate, delete, mirror, swap the players, turn.
+- **Connect**: the drawer says which existing position each end matches, so a new transition
+  joins the graph; "Append an existing position as the last frame" ends it on one.
+- **Describe**: name, tags in GrappleMap's vocabulary (a submission tag is what lights the
+  attacked joint), who moves, a reference.
+- **Save**: the block is written in GrappleMap's format and the graph is rebuilt.
+
+It speaks English and Portuguese.
+
+<Canvas of={EditorMode.Portuguese} />
+
+```ts
+import { openEditor } from "@bjj3d/editor";
+
+openEditor({ viewer, db, lang: () => "en", onClose });
+```
+
+It opens its drawer inside the page's `#stage` and uses the viewer it is given, so the
+cinema template is all it needs around it.
