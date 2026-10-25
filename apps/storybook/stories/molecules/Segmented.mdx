@@ -1,0 +1,43 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Segmented from "./Segmented.stories.ts";
+
+<Meta of={Segmented} />
+
+# Segmented
+
+A row of buttons where exactly one is chosen. The site uses it for every setting with a few
+named values: look, place, camera, speed, and the camera chip over the view.
+
+<Canvas of={Segmented.Look} />
+<Canvas of={Segmented.Speed} />
+
+## Over the view
+
+With `className: "glass"` it sits on the blurred glass used over the 3D view. This is the
+camera chip: the two everyday cameras (directed and free) stay on screen; the others are in
+the settings.
+
+<Canvas of={Segmented.CameraChip} />
+
+## The state lives outside
+
+The control does not keep a value. It asks `get()` what is chosen and calls `set(v)` on a
+click; the page stores the setting, applies it, and calls `refresh()` on every segmented
+control, so two controls showing the same setting (the camera chip and the camera row)
+always agree.
+
+```ts
+import { segmented } from "@bjj3d/ui";
+
+const look = segmented({
+  items: [["solid", "Solid"], ["wood", "Wood"], ["hologram", "X-ray"]],
+  get: () => settings.look,
+  set: (v) => { settings.look = v; apply(); },
+  id: "look",
+});
+panel.append(look.element);
+// after any change:
+look.refresh();
+```
+
+Each button carries `data-value` and `aria-pressed`.

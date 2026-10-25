@@ -1,0 +1,18 @@
+/* The site's stylesheet hides overflow on the page; stories and docs need to scroll. */
+html, body { overflow: auto; height: auto }
+.sb-stage { position: relative; width: 100%; background: var(--navy); overflow: hidden }
+.sb-stage canvas { display: block; width: 100%; height: 100% }
+.sb-stage .sb-label { position: absolute; left: 12px; top: 10px; font-size: 13px; color: var(--muted); pointer-events: none }
+.sb-grid { display: grid; gap: 12px; padding: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) }
+.sb-swatch { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink) }
+.sb-swatch i { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); flex: none }
+.sb-swatch code { font-size: 12px; color: var(--muted) }
+.sb-page { padding: 24px; color: var(--ink) }
+.sb-frame { width: 100%; height: 720px; border: 0; display: block }
+
+/* Interface stories: a box that stands in for the page. It is the containing block of the
+   organisms' absolute and fixed positions, so each sits where it does on the site. */
+.sb-box { position: relative; transform: translateZ(0); overflow: hidden; background: var(--navy); border-radius: 8px }
+.sb-box.sb-open #panel { transform: none }
+.sb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 16px; color: var(--ink) }
+.sb-col { display: grid; gap: 12px; padding: 16px; max-width: 380px; color: var(--ink); background: var(--panel) }

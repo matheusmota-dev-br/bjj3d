@@ -1,0 +1,51 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Scene from "./Scene.stories.ts";
+
+<Meta of={Scene} />
+
+# Scene
+
+Two fighters in a place, with their lights. A place sets the floor and what surrounds it,
+the background and fog, how far the camera may go, and how strong the sky light is.
+
+## The built-in places
+
+All of them are drawn in code (canvas textures and planes); nothing is downloaded.
+
+**Mat**: a competition mat, 1 m tiles, an 8 × 8 m area with a safety border.
+
+<Canvas of={Scene.Mat} />
+
+**Gym**: the mat in a room with padded walls. The camera stays inside the room.
+
+<Canvas of={Scene.Gym} />
+
+**Studio**: an endless backdrop of one colour for floor, horizon and sky; only the shadows
+show depth. The cleanest place to read a technique.
+
+<Canvas of={Scene.Studio} />
+
+**Night**: the dark grid, the project's identity (the banner is drawn here).
+
+<Canvas of={Scene.Night} />
+
+<Controls of={Scene.Mat} />
+
+## Light and dark
+
+Each place has a light and a dark version (the toolbar's theme). A place tells the looks
+whether it is bright (`light`), because the x-ray look adds light on dark backgrounds and
+tints on bright ones.
+
+## A new place
+
+A place is a `PlaceDef`: an id and a `build(theme)` that returns the `Environment` (a group
+of objects, background, fog, `maxDistance`, `light`, `hemi`).
+
+```ts
+const viewer = new Viewer(canvas, { places: [competition] });
+viewer.setEnvironment("competition", "dark");
+```
+
+When the place changes, the viewer disposes the old one's geometry and materials. See
+**Guides/A new place, look or belt**.

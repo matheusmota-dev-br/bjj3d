@@ -1,0 +1,39 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Skeleton from "./Skeleton.stories.ts";
+
+<Meta of={Skeleton} />
+
+# Skeleton
+
+The one thing every package depends on, and the one thing that does not change.
+
+<Canvas of={Skeleton.Joints} />
+
+## The pose
+
+A pose is **both players**: `Pose = [Player, Player]`. Index 0 is "top" and 1 is "bottom",
+GrappleMap's convention. A player is a record of **23 joints**, each a point `[x, y, z]` in
+metres, with `y` up:
+
+```ts
+import { JOINTS, type Pose } from "@bjj3d/core";
+// toes, heels, ankles, knees, hips, shoulders, elbows, wrists, hands, fingers (left and
+// right), core, neck, head
+```
+
+GrappleMap stores each coordinate as two base-62 digits (`@bjj3d/grapplemap` reads and
+writes them), so a pose is precise to the millimetre.
+
+## The same position, moved
+
+Two poses are the **same position** if one is the other rotated about the vertical axis and
+shifted, possibly mirrored (left and right swapped) and with the players swapped, all
+within 4 cm per joint. `isReoriented(a, b)` finds that move; `reorient(p, r)` applies it.
+This is what links transitions into a graph, and what lets the viewer chain the next move
+from where the last one ended.
+
+## Why it does not change
+
+Every metric reads these joints by name, the mannequin places a piece between each pair,
+the contact solver gives each bone a capsule, and the data format stores exactly these 23.
+Changing the skeleton would break all of them at once.

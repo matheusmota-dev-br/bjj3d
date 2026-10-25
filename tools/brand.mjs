@@ -3,10 +3,10 @@
 //   docs/render.png                 a frame of the knee-on-belly armbar, interface hidden
 //                                   (settings cleared first, so the saved look does not leak in)
 //   docs/banner.png                 tools/banner.html (name, tagline, the render)
-//   web/public/apple-touch-icon.png tools/icon.svg at 180 px
-//   web/public/favicon-32.png       web/public/favicon.svg at 32 px
+//   apps/web/public/apple-touch-icon.png tools/icon.svg at 180 px
+//   apps/web/public/favicon-32.png  apps/web/public/favicon.svg at 32 px
 //
-// Needs the viewer running (cd web && npm run dev):
+// Needs the viewer running (npm run dev):
 //   node tools/brand.mjs [http://localhost:5173]   CHROME=/path/to/chrome to override
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -20,7 +20,7 @@ const chromePath = process.env.CHROME ?? "/Applications/Google Chrome.app/Conten
 const PORT = 9341;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const profile = mkdtempSync(join(tmpdir(), "bjj-3d-brand-"));
+const profile = mkdtempSync(join(tmpdir(), "bjj3d-brand-"));
 const chrome = spawn(chromePath, ["--headless=new", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars",
   `--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`, "about:blank"], { stdio: "ignore" });
 
@@ -49,7 +49,7 @@ async function capture(url, width, height, out, { transparent = false, settle = 
 }
 
 // The armbar's index in graph.json (GrappleMap line 14237).
-const graph = JSON.parse(readFileSync(new URL("web/public/graph.json", root), "utf8"));
+const graph = JSON.parse(readFileSync(new URL("apps/web/public/graph.json", root), "utf8"));
 const armbar = graph.transitions.findIndex((t) => t.line === 14237);
 
 await send("Page.enable");
@@ -58,7 +58,9 @@ await sleep(2500);
 await evaluate("localStorage.clear()");
 await capture(`${base}/?frame=8#t/${armbar}`, 1280, 720, "docs/render.png", {
   settle: 6000,
-  script: `(() => {
+  script: `(async () => {
+    // The page builds its controls once graph.json is in; on a slow machine that is after settle.
+    while (!document.querySelector('#look [data-value="solid"]')) await new Promise((r) => setTimeout(r, 100));
     // The identity: solid mannequins on the dark grid, the directed camera, the lock lit.
     document.querySelector('#look [data-value="solid"]').click();
     document.querySelector('#place [data-value="night"]').click();
@@ -74,8 +76,8 @@ await capture(pathToFileURL(new URL("tools/banner.html", root).pathname).href, 1
 
 // An SVG without width/height fills the viewport, so the file itself is the page.
 const svg = (path) => pathToFileURL(new URL(path, root).pathname).href;
-await capture(svg("tools/icon.svg"), 180, 180, "web/public/apple-touch-icon.png", { transparent: true, settle: 800 });
-await capture(svg("web/public/favicon.svg"), 32, 32, "web/public/favicon-32.png", { transparent: true, settle: 800 });
+await capture(svg("tools/icon.svg"), 180, 180, "apps/web/public/apple-touch-icon.png", { transparent: true, settle: 800 });
+await capture(svg("apps/web/public/favicon.svg"), 32, 32, "apps/web/public/favicon-32.png", { transparent: true, settle: 800 });
 
 ws.close();
 chrome.kill();

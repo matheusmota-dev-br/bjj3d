@@ -1,0 +1,44 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Tokens from "./Tokens.stories.ts";
+
+<Meta of={Tokens} />
+
+# Tokens
+
+The colours every other level is built from. There are three families, and each one has a
+job; none of them is decoration.
+
+## Fighters
+
+Player 0 is **amber** and player 1 is **blue**, from GrappleMap's convention (0 is "top",
+1 is "bottom"). The colours stay with the *people*, not with the roles: when a chain of
+transitions swaps who is on top, amber is still the same person. That is why they are
+exported from `@bjj3d/three` as `COLORS` and never chosen per scene.
+
+The **tension glow** is the only red in the 3D scene. It means one thing: a joint is being
+attacked, and how hard. Nothing else in the viewer may use it, or the reading loses its
+meaning.
+
+<Canvas of={Tokens.Fighters} />
+
+## Belts
+
+The five adult belts, as `BELT_COLORS`. A belt is only a colour by id, so a new one (a
+coral belt, a kids' grey) is a colour passed to the viewer's `belts` option; see
+**Atoms/Belt**.
+
+<Canvas of={Tokens.Belts} />
+
+## Interface
+
+The site's colours, as CSS custom properties on `:root` (`--navy`, `--panel`, `--ink`,
+`--amber`, …). The dark theme is the default; `[data-theme="light"]` redefines them. Switch
+the theme in the toolbar to see both sets.
+
+<Canvas of={Tokens.Interface} />
+
+## Rules
+
+- Amber and blue belong to the fighters; the interface uses them only to refer to a fighter.
+- Red (`--tension`, `TENSION_COLOR`) belongs to the load on a joint.
+- A colour that is not here is a new token first, then used.

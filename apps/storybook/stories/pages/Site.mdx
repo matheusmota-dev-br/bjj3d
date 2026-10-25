@@ -1,0 +1,43 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Site from "./Site.stories.ts";
+
+<Meta of={Site} />
+
+# Site
+
+The real app, `apps/web`, from its production build: the viewer with the interface around
+it. Each story is the site at one address.
+
+The build is made when Storybook starts, if there is none; after changing the site,
+`npm run build` refreshes it.
+
+## First visit
+
+The armbar from knee on belly, a big "Oss!" and the short "how to use".
+
+<Canvas of={Site.FirstVisit} />
+
+## A shared link
+
+Addresses open a move directly: `#t/<n>` a transition (`#t/<n>r` backwards), `#p/<n>` a
+position, and `?frame=<k>` opens paused at keyframe *k*. This one is the armbar, paused at
+keyframe 6.
+
+<Canvas of={Site.SharedLink} />
+
+## A position
+
+A position shows what can be done from it: the moves that start there, each with a picture
+of where it ends.
+
+<Canvas of={Site.Position} />
+
+## What is around the viewer
+
+- **The move fills the screen.** Under it, a filmstrip with a real frame of every step:
+  click to jump, drag to scrub; the last cell offers the next move.
+- **Browse** slides the panel over the view: what is on screen, next moves, techniques,
+  finishes and positions.
+- **⚙** holds the look, the place, the other cameras, the speed and the options.
+- **Fighters**: build and belt of each one, on a screen of their own.
+- 16 languages; Portuguese and English reviewed.

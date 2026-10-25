@@ -1,0 +1,35 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Panel from "./Panel.stories.ts";
+
+<Meta of={Panel} />
+
+# Panel
+
+Everything that is not the move itself, in one place that stays out of the way: it slides over
+the view from **☰ Browse** and closes with ✕ or by picking something.
+
+<Canvas of={Panel.Open} />
+
+## Its parts
+
+- **Top**: the name (a link home) and a search ("mount, armbar, guard…"). Typing replaces the
+  lists with results.
+- **Body**: the page fills it. On the site, from top to bottom: the **now card** (what is on
+  screen), **Next** (moves that continue from here), **Explore** (techniques, finishes,
+  positions) and **Details** (GrappleMap's description, tags, references, and the moves that
+  lead into a position).
+- **Foot**: one line about the data, the language and the theme.
+
+## Why it slides over
+
+The move fills the screen; reading about it should not shrink it. The panel covers part of the
+view only while it is open, and the camera does not move under it.
+
+```ts
+import { panel } from "@bjj3d/ui";
+
+const p = panel({ icon, name: "bjj3d", searchPlaceholder, about, languages, language, languageTitle, onSearch, onLanguage, onTheme, onClose });
+p.body.replaceChildren(...);   // the lists
+p.setTheme("☾", "Theme: dark");
+document.body.classList.add("open"); // slides it in
+```

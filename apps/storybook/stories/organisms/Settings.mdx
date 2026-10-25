@@ -1,0 +1,31 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Settings from "./Settings.stories.ts";
+
+<Meta of={Settings} />
+
+# Settings
+
+Behind ⚙, top right: everything about *how* the move is shown, never *which* move.
+
+<Canvas of={Settings.Open} />
+
+## Its parts
+
+- **Rows** of segmented controls: look, place, camera, speed.
+- **Options**, each with a line saying what it does: loop, mirror, show one fighter, through
+  whose eyes, Oss!, the finishing moment, the angle in degrees.
+- **Actions**: the fighters screen, how to use again, and on the dev server the editor.
+
+It opens and closes with ⚙ and closes on a click anywhere else. Every setting is saved in the
+browser, so a returning visitor finds the view as they left it.
+
+```ts
+import { settingsMenu } from "@bjj3d/ui";
+
+const s = settingsMenu({ title: "Settings", rows: [{ id: "look", label: "Look", control }], options, actions });
+topRight.append(s.button, s.panel);
+s.actions.append(extraButton);
+```
+
+A row's label gets the id `<id>-label`, and its control the id you give it, so the site's
+tests and tools can find each one.

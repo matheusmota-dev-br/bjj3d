@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/matheusmota-dev-br/bjj3d/schemas/technique/v1",
+  "title": "Technique",
+  "description": "A hand-written technique over one GrappleMap transition (data/techniques/*.json): names, steps and notes.",
+  "type": "object",
+  "required": ["id", "reviewed", "names", "source", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "The file name without .json." },
+    "reviewed": { "type": "boolean", "description": "False until someone who knows the technique has checked the text; the viewer marks it as a draft." },
+    "names": { "$ref": "text.schema.json" },
+    "source": {
+      "type": "object",
+      "required": ["grapplemap_line", "from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "grapplemap_line": { "type": "integer", "minimum": 1, "description": "Line where the transition's block starts in GrappleMap.txt." },
+        "from": { "type": "string", "description": "Name of the position it starts from, as a check." },
+        "to": { "type": "string", "description": "Name of the position it ends in, as a check." }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["frame", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "frame": { "type": "integer", "minimum": 0, "description": "Keyframe the step starts at." },
+          "text": { "$ref": "text.schema.json" }
+        }
+      }
+    },
+    "risk": { "$ref": "text.schema.json", "description": "Replaces the generic risk line of the submission kind." },
+    "note": { "$ref": "text.schema.json" }
+  }
+}

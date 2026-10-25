@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/matheusmota-dev-br/bjj3d/schemas/graph/v1",
+  "title": "Graph",
+  "description": "What the viewer loads (graph.json): every position and transition, poses already solved for contact, and the reviewed techniques. Built by packages/data/scripts/build-data.ts.",
+  "type": "object",
+  "required": ["substeps", "positions", "transitions", "techniques"],
+  "additionalProperties": false,
+  "properties": {
+    "substeps": { "type": "integer", "minimum": 1, "description": "Frames per keyframe gap in a transition's poses; keyframe k is poses[k * substeps]." },
+    "positions": { "type": "array", "items": { "$ref": "#/$defs/position" } },
+    "transitions": { "type": "array", "items": { "$ref": "#/$defs/transition" } },
+    "techniques": {
+      "type": "object",
+      "description": "Keyed by transition index.",
+      "propertyNames": { "pattern": "^[0-9]+$" },
+      "additionalProperties": { "$ref": "technique.schema.json" }
+    }
+  },
+  "$defs": {
+    "pose": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9]{276}$",
+      "description": "Both players' 23 joints, each coordinate as two base-62 digits, as in GrappleMap.txt (without the line breaks)."
+    },
+    "common": {
+      "type": "object",
+      "required": ["name", "description", "tags", "refs", "line"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "refs": { "type": "array", "items": { "type": "string" } },
+        "line": { "type": "integer", "minimum": 1, "description": "Line where the block starts in its source file." }
+      }
+    },
+    "position": {
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["pose"],
+      "properties": { "pose": { "$ref": "#/$defs/pose" } },
+      "unevaluatedProperties": false
+    },
+    "transition": {
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["properties", "from", "to", "kind", "poses"],
+      "properties": {
+        "properties": { "type": "array", "items": { "type": "string" }, "description": "GrappleMap's: top/bottom (who moves), bidirectional, detailed." },
+        "from": { "type": ["integer", "null"], "minimum": 0, "description": "Index of the position it starts from." },
+        "to": { "type": ["integer", "null"], "minimum": 0, "description": "Index of the position it ends in." },
+        "kind": { "type": ["string", "null"], "description": "Submission kind (a metric id), if it is one." },
+        "poses": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/pose" } }
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}

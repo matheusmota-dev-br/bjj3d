@@ -1,0 +1,50 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Introduction" />
+
+# bjj3d
+
+Jiu-jitsu positions and transitions in 3D: two jointed mannequins play each transition of
+[GrappleMap](https://github.com/Eelis/GrappleMap), and in a submission the attacked joint
+lights up as the lock tightens.
+
+This catalog shows the packages the way you would use them: every story imports them by
+name, never by path.
+
+| package | what it holds | depends on |
+|---|---|---|
+| `@bjj3d/core` | the skeleton (23 joints, two players), pose operations, the contact solver (`/contact`), test poses (`/testing`) | nothing |
+| `@bjj3d/grapplemap` | reader and writer of GrappleMap's text format, the position graph | core |
+| `@bjj3d/metrics` | joint-load readings, one per submission kind, as a registry | core, three |
+| `@bjj3d/data` | `graph.json` as the viewer loads it, its JSON Schemas, the scripts that build and check it | core, grapplemap, metrics |
+| `@bjj3d/three` | the viewer: mannequins, looks, places, belts, the directed camera | core, metrics, three |
+| `@bjj3d/editor` | the local pose editor and its Vite plugin (`/server`) | core, grapplemap, three |
+| `@bjj3d/ui` | the site's interface: plain DOM components by atomic design, design tokens (`/tokens.css`) and styles (`/ui.css`) | nothing |
+
+## The pose
+
+```ts
+import { JOINTS, type Pose } from "@bjj3d/core";
+// A pose is both players: [top, bottom], each a record of 23 joints → [x, y, z] in metres.
+```
+
+The skeleton never changes; everything else can be extended. See the **Guides**.
+
+## How the catalog is organized
+
+Atomic design, for what you see. Each level has two groups: **3D** (what the viewer draws,
+`@bjj3d/three`) and **Interface** (what the site puts around it, `@bjj3d/ui`).
+
+- **Foundations**: colours of the fighters, belts and interface.
+- **Atoms**: 3D: a look, a belt. Interface: button, badge, dot, swatch, eyebrow.
+- **Molecules**: 3D: a mannequin, the glow on the attacked joint. Interface: segmented
+  control, option, ref row, title card, thumb, tabs, slider.
+- **Organisms**: 3D: the scene, the camera. Interface: panel, settings, filmstrip, now card,
+  customizer, overlays (how to use, Oss!, the ring).
+- **Templates**: the viewer; the cinema screen (every organism in place); the editor mode.
+- **Pages**: the site itself.
+
+And beside it, **Engine**: what is not drawn but computed (skeleton, metrics, every finish).
+
+The toolbar sets the theme, the place and the look for every 3D story. The **Reading**
+panel shows the submission measure at the current frame.

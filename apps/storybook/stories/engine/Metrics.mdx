@@ -1,0 +1,70 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Metrics from "./Metrics.stories.ts";
+
+<Meta of={Metrics} />
+
+# Metrics
+
+One reading per submission kind: how far the attacked joint is pushed through its range,
+from geometry alone. Each story plays a finish of that kind; open the **Reading** panel.
+
+<Controls of={Metrics.Elbow} />
+
+| kind | reading | danger from |
+|---|---|---|
+| elbow lock | elbow flexion, with the opponent's hips on the elbow | under 14° |
+| knee bar | knee flexion, with the opponent's hips on the knee | under 25° |
+| shoulder lock (kimura, omoplata) | internal rotation of the upper arm | over 110° |
+| knee twist (heel hook, toe hold) | rotation of the shin under the bent knee | over 60° |
+| choke | gap between the throat and the opponent's second-closest limb | under 12.2 cm |
+| neck crank | neck flexion | over 75° |
+
+These are angles and distances, not forces: GrappleMap has neither forces nor timing.
+
+## Elbow
+
+The arm nearly straight **and** the opponent's hips near the elbow; a straight arm alone is
+not an armbar.
+
+<Canvas of={Metrics.Elbow} />
+
+## Shoulder
+
+Rotation of the upper arm about its own axis. The forearm only shows it when the elbow is
+bent, so the reading carries a confidence that fades as the arm straightens. Grappling arms
+live in internal rotation (77° median outside submissions), so only well past that counts.
+
+<Canvas of={Metrics.Shoulder} />
+
+## Knee
+
+Like the elbow: the leg nearly straight with the opponent's hips on the knee.
+
+<Canvas of={Metrics.Knee} />
+
+## Knee twist
+
+How far the foot turns away from where the thigh points, under a bent knee.
+
+<Canvas of={Metrics.KneeTwist} />
+
+## Choke
+
+A choke needs the neck held from two sides (forearm and biceps, or thigh and shin), so the
+reading is the distance to the opponent's **second**-closest limb. With bodies at full
+thickness a forearm cannot get closer than about 9 cm to the neck's axis.
+
+<Canvas of={Metrics.Choke} />
+
+## Neck crank
+
+Flexion of the neck, from the core through the neck to the head.
+
+<Canvas of={Metrics.NeckCrank} />
+
+## A registry
+
+Each kind is a `SubmissionMetric` (tags, side, danger threshold, `read`, `glowPoint`) and
+`createMetrics([...builtinMetrics, yours])` makes a registry the viewer takes. `npm run
+validate` measures every kind in the registry over the whole database and writes
+`docs/validation.md`. See **Guides/A new submission**.

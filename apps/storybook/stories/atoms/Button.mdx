@@ -1,0 +1,40 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Button from "./Button.stories.ts";
+
+<Meta of={Button} />
+
+# Button
+
+Every button of the site is this atom. There are four kinds, and each one has a single job,
+so a person can tell what a button does from how it looks before reading it.
+
+<Canvas of={Button.All} />
+
+| kind | where | what it says |
+|---|---|---|
+| **chip** | inside a panel or drawer | a small action: Done, Reset, 🧍 Fighters. `round` for a single symbol (?, ✕). |
+| **float** | over the 3D view, on its own | a way into more: ☰ Browse, ⚙. |
+| **icon** | inside a bar | one symbol: ▶ and ❚❚ in the filmstrip. |
+| **primary** | once per screen at most | the one thing to do next: Got it. |
+
+<Canvas of={Button.Chip} />
+<Controls of={Button.Chip} />
+
+## Usage
+
+```ts
+import { button } from "@bjj3d/ui";
+
+button({ label: "Done", onClick: close });
+button({ label: "?", round: true });           // aria-label is the symbol
+button({ label: "☰ Browse", kind: "float" });
+button({ label: "Wood", pressed: true });      // a toggle: aria-pressed
+```
+
+## Rules
+
+- At most one **primary** button on screen.
+- A round button holds one symbol; the symbol becomes its accessible name, so give it a
+  `title` when the symbol alone is not clear.
+- A button that switches something on and off says so with `pressed` (`aria-pressed`), and
+  the styles show the pressed state.

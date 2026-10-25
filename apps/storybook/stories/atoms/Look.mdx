@@ -1,0 +1,51 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Look from "./Look.stories.ts";
+
+<Meta of={Look} />
+
+# Look
+
+A look is how the mannequins are drawn: the materials of the body pieces, the joint balls
+and the belt. It changes nothing about the pose; the figure is always exactly the data.
+
+## The three built-ins
+
+| look | what it is for |
+|---|---|
+| **solid** | the fighter's colour, joints a little darker. The easiest to read, and the default. |
+| **wood** | an artist's mannequin: wood grain on the body, joints in the fighter's colour. |
+| **x-ray** (`hologram`) | one translucent colour per fighter, to see limbs hidden behind the other body. It casts no shadows, and on a bright place it tints instead of adding light. |
+
+<Canvas of={Look.Solid} />
+<Canvas of={Look.Wood} />
+<Canvas of={Look.XRay} />
+
+<Controls of={Look.Solid} />
+
+## How it works
+
+Every look of a fighter shares the same uniforms (`SharedUniforms`): the tension value,
+where the glow is centred and its radius. The viewer sets them once per frame, and
+whichever look is on screen picks them up, so switching looks never loses the glow.
+
+## A new look
+
+A look is a `LookDef`:
+
+```ts
+import type { LookDef } from "@bjj3d/three";
+
+const outline: LookDef = {
+  id: "outline",
+  paint(color, uniforms, beltColor, onLight) {
+    // return { body, joint, belt }: three materials
+  },
+  shadows: true,
+};
+
+new Viewer(canvas, { looks: [outline] }).setLook("outline");
+```
+
+`paint` gets the fighter's colour, the shared uniforms (use them if the look should glow),
+the belt's colour and whether the place is bright. The viewer caches the result per
+fighter and rebuilds it when the place changes.

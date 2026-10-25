@@ -1,0 +1,37 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as AttackedJoint from "./AttackedJoint.stories.ts";
+
+<Meta of={AttackedJoint} />
+
+# Attacked joint
+
+In a submission, the attacked joint glows red, and the glow grows as the lock tightens.
+This is the reason the project exists: to *see* where a technique puts its load.
+
+<Canvas of={AttackedJoint.Armbar} />
+<Controls of={AttackedJoint.Armbar} />
+
+Scrub **frame** and open the **Reading** panel below the canvas: it shows the value the glow
+paints (0 to 1), the measure behind it (here, the elbow's flexion in degrees) and whether
+it is in the danger range.
+
+## Where the number comes from
+
+GrappleMap has no forces and no timing, so the load is read from geometry alone: how far
+the joint is pushed through its range, gated by something of the opponent being where the
+leverage comes from. For an armbar, the elbow must be nearly straight **and** the
+opponent's hips must be on it. Each submission kind has one such metric, in
+`@bjj3d/metrics`; see **Engine/Metrics**.
+
+## Only one joint lights
+
+The viewer lights only the joint the technique attacks, chosen from the transition's tags
+(an `armbar` tag attacks an elbow; which elbow is whichever reads highest over the clip).
+Measuring every joint all the time would light joints that nothing attacks: arms are
+often straight, necks often bent. `docs/validation.md` counts how often that would happen.
+
+## On screen
+
+The glow is part of the materials (every look picks it up). The site also draws a ring
+around the joint while the lock is on, and at the first frame in the danger range slows
+time and pushes the camera in: the finishing moment.

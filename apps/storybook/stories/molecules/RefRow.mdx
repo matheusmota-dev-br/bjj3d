@@ -1,0 +1,40 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as RefRow from "./RefRow.stories.ts";
+
+<Meta of={RefRow} />
+
+# Ref row
+
+One row of the panel's lists: a position, a move or a finish. Every list in the panel (next
+moves, techniques, finishes, positions, search results, "moves into this position") is made
+of these rows.
+
+<Canvas of={RefRow.Finish} />
+<Controls of={RefRow.Finish} />
+
+## What it shows
+
+- **A picture of where it ends**: the last frame of a move, or the position. People
+  recognize positions faster than they read their names. On the site the pictures are drawn
+  only when the row scrolls into view.
+- **The name**, then the submission badge if the move finishes with one.
+- **A line saying what it is**: "Move · from A to B".
+
+<Canvas of={RefRow.Position} />
+
+## Next and here
+
+In the **Next** list a row continues the fight from where the current move ended, so it shows
+→ and, when clicked, the viewer chains it (the bodies stay where they are).
+
+<Canvas of={RefRow.Next} />
+
+The row of what is on screen is marked.
+
+<Canvas of={RefRow.Here} />
+
+```ts
+import { refList, refRow } from "@bjj3d/ui";
+
+refList([refRow({ href: "#t/458", title, picture: img, kind: "Elbow lock", sub: "Move · from … to …", chain: true, onClick })]);
+```

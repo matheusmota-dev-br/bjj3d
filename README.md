@@ -1,6 +1,6 @@
-![bjj-3d: jiu-jitsu positions and transitions in 3D, with the load on the attacked joint](docs/banner.png)
+![bjj3d: jiu-jitsu positions and transitions in 3D, with the load on the attacked joint](docs/banner.png)
 
-# bjj-3d
+# bjj3d
 
 Brazilian jiu-jitsu positions and transitions in 3D. Two jointed mannequins play each
 transition; in a submission, the attacked joint lights up as the lock tightens and a note
@@ -11,14 +11,15 @@ and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you c
 
 ## What you see
 
-- **Mannequins**: a rigid, rounded piece between each pair of GrappleMap joints, a ball at
-  each joint, blocks for the torso, a plain head (a small nose shows where it faces), simple
-  hands and feet, and a belt. Nothing deforms: every piece is placed straight from the 23
-  joints per player, so the figure is exactly the data. Amber and blue stay the same people
-  while you chain transitions.
+- **Mannequins**: a wooden figure, as an artist's mannequin (an egg head, a chest with
+  shoulders, abdomen and pelvis, tapered limbs, shoe-like feet, a belt), its pieces shaped
+  from five views of a reference (`docs/character.html`). A ball fills every joint, so a bent
+  one closes instead of opening a gap; the hand has a thumb and four fingers that fold together.
+  Nothing deforms: every piece is placed straight from the 23 joints per player, so the figure
+  is exactly the data. Amber and blue stay the same people while you chain transitions.
 - **Contact**: GrappleMap's figures are thin; given thickness they would sink into each other.
-  An offline solver (`web/src/contact.ts`) gives each player capsules as thick as the
-  mannequin's pieces, separates what overlaps (touching is allowed), keeps bone lengths, keeps
+  An offline solver (`packages/core/src/contact.ts`) gives each player capsules close to the
+  mannequin's pieces (the wooden figure is a little fuller in the chest and thighs), separates what overlaps (touching is allowed), keeps bone lengths, keeps
   everything above the mat and stays close to the original pose. It also adds an in-between
   frame per keyframe gap so limbs do not pass through each other on the way. Over the
   database, the deepest overlap per transition goes from 5.2 cm to 1.5 cm (median; 1 cm is
@@ -68,7 +69,7 @@ and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you c
 
 16 languages, as in [mathra](https://github.com/matheusmota-dev-br/mathra): `pt-BR` (default),
 `en`, `es`, `fr`, `de`, `it`, `ru`, `zh`, `ja`, `ko`, `hi`, `ar` (right to left), `id`, `tr`,
-`nl` and `pl`, chosen at the top of the panel. Each one is a JSON file in `web/src/locales/`
+`nl` and `pl`, chosen at the top of the panel. Each one is a JSON file in `apps/web/src/locales/`
 with the keys of `en.json`. Portuguese and English are reviewed; the other languages still
 need a native speaker's review. Position and transition names stay in English, as in
 GrappleMap, and technique texts exist in English and Portuguese only.
@@ -76,44 +77,81 @@ GrappleMap, and technique texts exist in English and Portuguese only.
 ## Running
 
 ```
-cd web
 npm install
 npm run dev
 ```
 
-`npm run build` writes a static site to `web/dist`. Links: `#p/<n>` opens position *n*,
+`npm run build` writes a static site to `apps/web/dist`. Links: `#p/<n>` opens position *n*,
 `#t/<n>` transition *n* (`#t/<n>r` backwards), and `?frame=<k>` opens paused at keyframe *k*.
 Keys: space plays and pauses, the arrows step.
 For checking: `?debug=1` draws the solved stick figures over the mannequins, and
 `?graph=<file>` loads another build of the data.
 
+## Packages
+
+The viewer is split into packages that can be used and extended on their own; the site is one
+more consumer of them. [docs/library-plan.md](docs/library-plan.md) has the plan and what is
+left.
+
+| package | what it holds | depends on |
+|---|---|---|
+| `@bjj3d/core` | the skeleton (23 joints, two players), pose operations, the contact solver (`/contact`), test poses (`/testing`) | nothing |
+| `@bjj3d/grapplemap` | reader and writer of GrappleMap's text format, the position graph | core |
+| `@bjj3d/metrics` | joint-load readings, one per submission kind, as a registry (`createMetrics`) | core, three |
+| `@bjj3d/data` | `graph.json` as the viewer loads it, JSON Schemas of the data formats, the scripts that build and check it | core, grapplemap, metrics |
+| `@bjj3d/three` | the viewer: mannequins, looks, places, belts, the directed camera | core, metrics, three |
+| `@bjj3d/editor` | the local pose editor and its Vite plugin (`/server`) | core, grapplemap, three |
+| `@bjj3d/ui` | the site's interface by atomic design: plain DOM components, tokens and styles | nothing |
+
+Submissions, places, looks and belts are registries: the viewer takes new ones as options,
+next to the built-ins (`new Viewer(canvas, { metrics, places, looks, belts })`), and
+`viewer.dispose()` releases everything it holds. The packages are not on npm yet.
+
+`npm run storybook` opens the catalog (`apps/storybook`): foundations, atoms, molecules,
+organisms, templates and pages of the viewer, the engine (skeleton, metrics, every finish)
+and guides to extending it. Its Pages level shows the site's production build,
+made on first start (`npm run build` refreshes it).
+
 ## Layout
 
 ```
-data/grapplemap/       GrappleMap database, unchanged (public domain), and bjj-3d.txt,
+data/grapplemap/       GrappleMap database, unchanged (public domain), and bjj3d.txt,
                        our additions in the same format (written by the local editor)
 data/techniques/       reviewed techniques: one JSON file per transition
 data/body/capsules.json  thickness of each body part (metres), shared by the mannequin and
                        the contact solver
 tools/                 icon.svg, banner.html and brand.mjs, which renders docs/banner.png
                        and the PNG icons from the running viewer
-web/src/
-  grapplemap.ts        reader; matches poses up to rotation, mirror and player swap
+packages/core/src/
+  pose.ts              the skeleton; matches poses up to rotation, mirror and player swap
   contact.ts           offline contact solver and in-between frames
+packages/grapplemap/src/
+  grapplemap.ts        reader and writer of the text format, the position graph
+packages/metrics/src/
   landmarks.ts         a player's joints as vectors
+  metrics.ts           joint readings per submission kind, and their registry
+packages/three/src/
   mannequin.ts         the jointed mannequin, placed from the joints every frame
-  metrics.ts           joint readings per submission kind
   materials.ts         the looks (solid, wood, x-ray), with the load glow
   environment.ts       the places: mat, gym, studio, night
-  i18n.ts, locales/    interface text, one JSON file per language
   viewer.ts            scene, playback, chaining, cameras
-  data.ts, main.ts     graph, search and the page
-  editor.ts            the local editor (dev only; its server is a plugin in vite.config.ts)
-web/scripts/
-  build-data.ts        GrappleMap + data/techniques -> solved poses -> web/public/graph.json
-  validate.ts          writes docs/validation.md
-  calibrate.ts         raw distributions used to pick thresholds
-  find.ts              search transitions from the command line
+packages/editor/src/
+  editor.ts            the local editor (dev only)
+  editor-server.ts     its two endpoints, as a Vite plugin
+packages/data/
+  src/data.ts          graph.json as the viewer reads it, and search
+  schemas/             JSON Schemas of graph.json, techniques and body capsules
+  scripts/build-data.ts  GrappleMap + data/techniques -> solved poses -> apps/web/public/graph.json
+  scripts/validate.ts  writes docs/validation.md
+  scripts/calibrate.ts raw distributions used to pick thresholds
+  scripts/find.ts      search transitions from the command line
+packages/ui/src/
+  atoms/, molecules/, organisms/, templates/  the interface components (plain DOM)
+  tokens.css, ui.css   design tokens and component styles
+apps/web/src/
+  main.ts              the page: the cinema template, filled and wired to the viewer
+  i18n.ts, locales/    interface text, one JSON file per language
+apps/storybook/        the catalog
 ```
 
 ## Adding a reviewed technique
@@ -137,9 +175,9 @@ lists candidates. The build checks that the line goes from `from` to `to`. Optio
 The editor exists only in the dev server (`npm run dev`), never in a build: ⚙ → **✎ Editor**.
 It poses the two mannequins by dragging their joints (the big ball moves a whole body; bone
 lengths are kept), keeps a list of frames (duplicate, delete, mirror, swap, turn), and saves
-the block in GrappleMap's own format to `data/grapplemap/bjj-3d.txt`, which the data build
+the block in GrappleMap's own format to `data/grapplemap/bjj3d.txt`, which the data build
 merges with the original database. Saving rebuilds `graph.json` (a few seconds: solved poses
-are cached in `web/.cache`) and reloads the page on the new block.
+are cached in `packages/data/.cache`) and reloads the page on the new block.
 
 It starts from a neutral position (the best-connected position of each family: standing,
 closed guard, half guard, butterfly, combat base, side control, knee on belly, mount,
@@ -153,23 +191,22 @@ what lights the attacked joint.
 ## Tests
 
 ```
-cd web
 npm test           # unit tests with coverage (must stay at 100%)
 npm run e2e        # end-to-end: the app driven like a person would
 npm run validate   # regenerates docs/validation.md
 ```
 
 - **Unit** (Vitest): plain modules run in Node; anything that needs WebGL or the DOM
-  (`*.browser.test.ts`) runs in headless Chromium. Coverage is measured over both, over all of
-  `web/src`, and the run fails below 100% of statements, branches, functions and lines.
-- **End-to-end** (Playwright, `web/e2e/`): a dedicated dev server on port 5181, Chromium in
+  (`*.browser.test.ts`) runs in headless Chromium. Coverage is measured over both, over every
+  package and `apps/web/src`, and the run fails below 100% of statements, branches, functions and lines.
+- **End-to-end** (Playwright, `apps/web/e2e/`): a dedicated dev server on port 5181, Chromium in
   new headless mode (WebGL on the GPU when there is one). It covers the first visit and Oss!,
   the filmstrip and keyboard, the finishing moment, chaining, the panel, settings kept across
   reloads, the camera chip, theme and language, the fighters screen, a phone-sized screen, the
   local editor from a neutral position to a saved, rebuilt and playable move, and a
   production build that must carry no editor. The editor saves into a scratch copy
-  (`BJJ3D_ADDITIONS`, `BJJ3D_GRAPH`); the suite fails if `data/grapplemap/bjj-3d.txt` or
-  `web/public/graph.json` changed.
+  (`BJJ3D_ADDITIONS`, `BJJ3D_GRAPH`); the suite fails if `data/grapplemap/bjj3d.txt` or
+  `apps/web/public/graph.json` changed.
 
 ## Sources and license
 

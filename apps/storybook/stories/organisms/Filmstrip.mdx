@@ -1,0 +1,39 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Filmstrip from "./Filmstrip.stories.ts";
+
+<Meta of={Filmstrip} />
+
+# Filmstrip
+
+The player under the move. It replaces a timeline with something people already understand:
+**a real frame of every step**.
+
+<Canvas of={Filmstrip.Playing} />
+<Controls of={Filmstrip.Playing} />
+
+## Its parts, from top to bottom
+
+- **The risk line**, red, only while a lock is in its danger range: what can happen to the
+  joint ("From here the lock can injure the elbow").
+- **The caption**: the step being played ("3. Sit close to the shoulder…") or the move's name.
+- **The strip**: ▶ / ❚❚, one cell per step, and the **next move** at the end, which continues
+  the fight from where this one ends.
+
+## Moving through time
+
+- **Click a cell** to jump to its step (and pause).
+- **Drag across** the strip to scrub: under the pointer, the time runs from the cell's step to
+  the next one.
+- On the site, **space** plays and pauses and the **arrows** step.
+
+<Canvas of={Filmstrip.Paused} />
+
+```ts
+import { filmstrip } from "@bjj3d/ui";
+
+const f = filmstrip({ onPlay, onPick: (step) => …, onScrub: (time) => … });
+f.setSteps(stops, viewer.thumbnails(stops), viewer.last);
+f.setNext({ href, label: "next", title, onClick, onMore });
+// every frame:
+f.setTime(viewer.time, viewer.playing, { play: "Play", pause: "Pause" });
+```

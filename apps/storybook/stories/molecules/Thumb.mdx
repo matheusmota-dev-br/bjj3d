@@ -1,0 +1,23 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Thumb from "./Thumb.stories.ts";
+
+<Meta of={Thumb} />
+
+# Thumb
+
+One cell of the filmstrip: **a real frame** of a step of the move (drawn by the viewer, not a
+picture made by hand), the step's number, and a bar that fills while that step plays.
+
+<Canvas of={Thumb.Thumb} />
+<Controls of={Thumb.Thumb} />
+
+The step being played is outlined (`now`); the steps before it are full.
+
+A step is a keyframe, or, for a reviewed technique, one of its written steps (which may span
+several keyframes). The filmstrip (**Organisms/Interface/Filmstrip**) makes and updates the
+cells; a page never needs to touch them.
+
+```ts
+import { thumb } from "@bjj3d/ui";
+thumb(2, src); // the third step
+```

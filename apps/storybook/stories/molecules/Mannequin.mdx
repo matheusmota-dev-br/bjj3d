@@ -1,0 +1,46 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Mannequin from "./Mannequin.stories.ts";
+
+<Meta of={Mannequin} />
+
+# Mannequin
+
+One fighter: a wooden figure, as an artist's mannequin. An egg head, a short neck with a
+collar seam, a chest with shoulders, a barrel abdomen, a brief-shaped pelvis, deltoid upper
+arms, tapered forearms, thighs and shins, shoe-like feet, and a belt. Each piece's width and
+depth were measured from five views of a reference figure (`docs/character.html`); its
+length is GrappleMap's bone.
+
+A ball fills every joint, a little smaller than the ends it joins: straight, it shows as the
+seam; bent, it closes the gap. The waist has a filler too, and the pelvis and the abdomen lean
+half-way to the line from mid-hip to neck, so a straight back is straight even though
+GrappleMap's Core sits behind it. The hand has two digits: four fingers folding together at
+Hand, by the angle GrappleMap stores, and a thumb with one fold that follows them (GrappleMap
+has no thumb).
+
+<Canvas of={Mannequin.Mannequin} />
+<Controls of={Mannequin.Mannequin} />
+
+## Nothing deforms
+
+Every piece is placed straight from the 23 joints, every frame. There is no skin, no
+skinning and no rig: the figure *is* the data. If a limb looks wrong, the pose is wrong,
+and that is something you want to see.
+
+## Thickness and the contact solver
+
+GrappleMap's figures are stick figures. Given thickness, two of them would sink into each
+other. The contact solver (`@bjj3d/core/contact`, sizes in `data/body/capsules.json`) keeps
+capsules apart that are close to the pieces; the wooden figure is a little fuller than them in
+the chest (13.8 cm half depth against 9.9) and the thighs (8.7 against 6.9), so in tight
+contact the wood may touch a little more than the solver sees.
+
+**Build** scales the pieces from slim (0.8) to sturdy (1.2). The solver is tuned for the
+standard build (1), so a much sturdier fighter may overlap a little more.
+
+## The data underneath
+
+Turn on **sticks** to draw GrappleMap's stick figure over the mannequin: the lines are the
+solved poses, the same numbers the mannequin is placed from.
+
+<Canvas of={Mannequin.WithSticks} />

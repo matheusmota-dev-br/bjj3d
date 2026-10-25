@@ -1,0 +1,32 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as NowCard from "./NowCard.stories.ts";
+
+<Meta of={NowCard} />
+
+# Now card
+
+The top of the panel: what is on screen, explained.
+
+<Canvas of={NowCard.Technique} />
+
+## Its parts
+
+- **A picture**, which follows the filmstrip: it always shows the step being played.
+- **The name and what it is** ("Move · from A to B").
+- **Who moves**, with the fighter's dot. GrappleMap marks some moves as done by the top or the
+  bottom player; the card says which of the two people on screen that is, even after a chain
+  swapped them.
+- **The steps**, for a reviewed technique. Click a step to jump to it; the step being played is
+  highlighted.
+- **Notes**, and "Draft text, not reviewed yet" until someone who knows the technique has read
+  it.
+
+A position has only a name and "Position".
+
+<Canvas of={NowCard.Position} />
+
+```ts
+import { nowCard } from "@bjj3d/ui";
+
+nowCard({ kind, title, what, mover: { color, text }, steps: [{ text, onClick }], notes });
+```

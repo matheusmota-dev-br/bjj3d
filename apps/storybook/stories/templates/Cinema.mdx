@@ -1,0 +1,41 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks";
+import * as Cinema from "./Cinema.stories.ts";
+
+<Meta of={Cinema} />
+
+# Cinema
+
+The site's only screen. **The move fills the page**; everything else floats over it and stays
+small, so the technique is never pushed aside by the interface around it.
+
+<Canvas of={Cinema.Cinema} />
+
+## Where everything goes
+
+| place | organism |
+|---|---|
+| top left | ☰ Browse and the **title card** (what is on screen) |
+| top right | the **camera chip** and ⚙ (**settings**) |
+| bottom | the **filmstrip**, with the risk line and the caption |
+| over the move | the **ring** on the attacked joint, the vignette of the finishing moment, **Oss!** |
+| right | the **customizer** (the fighters screen) |
+| center | **how to use**, on the first visit |
+| left, sliding in | the **panel** |
+
+<Canvas of={Cinema.FirstVisit} />
+
+## A template places, it does not decide
+
+`cinema()` takes the organisms already built and puts them in their places, around the canvas
+the viewer draws on. It has no logic of its own: what each button does, what is shown and when,
+is the page's job (`apps/web/src/main.ts`).
+
+```ts
+import { cinema } from "@bjj3d/ui";
+
+const screen = cinema({ panel, menuLabel: "☰ Browse", onMenu, titleCard, camChip, settingsButton, settings, oss, attention, customizer, help, player });
+document.body.append(...screen.nodes);
+const viewer = new Viewer(screen.canvas);
+```
+
+The buttons in this story do nothing; the real behaviour is in **Pages/Site**.

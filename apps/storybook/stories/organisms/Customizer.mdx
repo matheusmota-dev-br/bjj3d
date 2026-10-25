@@ -1,0 +1,34 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Customizer from "./Customizer.stories.ts";
+
+<Meta of={Customizer} />
+
+# Customizer
+
+The fighters screen: a drawer over the view where each fighter gets a build and a belt.
+
+<Canvas of={Customizer.Open} />
+
+## A screen of its own
+
+On the site, opening it changes the whole screen: the rest of the interface steps aside, the
+move pauses, the chosen fighter stands alone (GrappleMap's "staredown" pose) and the camera
+looks at whatever is being changed: the body when the slider is touched, the waist when a
+belt is picked. **Done** puts everything back and the move goes on.
+
+## Its parts
+
+- **A tab per fighter**, with the fighter's colour.
+- **Body**: the build slider, slim to sturdy.
+- **Belt**: the five belts by colour.
+- **Reset**, and a note: the contact solver is tuned to the standard build.
+
+The drawer itself only holds a title, Done, the tabs and a body; the page fills them with the
+molecules above.
+
+```ts
+import { customizer } from "@bjj3d/ui";
+
+const c = customizer({ title: "Customize the fighters", done: "Done", onDone });
+c.body.replaceChildren(slider({ … }), swatchChoices({ … }));
+```
