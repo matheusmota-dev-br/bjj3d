@@ -24,7 +24,7 @@ viewer.show({ poses: db.poses(ref), substeps: db.file.substeps, kind: db.file.tr
 viewer.playing = true;
 ```
 
-`graph.json` is built by `npm run data` (`@bjj3d/data`): every position and transition,
+`graph.json` is built by `pnpm data` (`@bjj3d/data`): every position and transition,
 with poses already solved for contact and in-between frames added. `substeps` says how many
 frames there are per keyframe gap.
 

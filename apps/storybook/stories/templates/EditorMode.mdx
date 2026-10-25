@@ -13,7 +13,7 @@ transitions, posed by hand, saved in GrappleMap's own format.
 
 ## Where it lives
 
-On the site the editor exists **only on the dev server** (`npm run dev`, then ⚙ → ✎ Editor);
+On the site the editor exists **only on the dev server** (`pnpm dev`, then ⚙ → ✎ Editor);
 it is never part of a build. It is a package of its own, `@bjj3d/editor`: the editor
 (`openEditor`) and a Vite plugin (`@bjj3d/editor/server`) with the two endpoints it saves
 through. Saving writes `data/grapplemap/bjj3d.txt` and rebuilds `graph.json`.

@@ -48,7 +48,7 @@ while it plays. Change the threshold until finishes reach it and everything else
 
 ## 4. Check it against the database
 
-`npm run validate` measures every kind in the registry over every transition and writes
+`pnpm validate` measures every kind in the registry over every transition and writes
 `docs/validation.md`: how many finishes reach the danger range, and how often it fires
 where nothing is attacked. A built-in submission goes into `builtinMetrics` in
 `packages/metrics/src/metrics.ts` with its validation numbers.
