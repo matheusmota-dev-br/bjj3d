@@ -9,6 +9,10 @@ says when it can cause injury.
 It covers the whole [GrappleMap](https://github.com/Eelis/GrappleMap) database: 601 positions
 and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you can…").
 
+**[Open the app](https://bjj-3d.vercel.app)** · [UI catalog](https://bjj3d-ui.vercel.app) (Storybook)
+
+![A move playing: the directed camera, the step caption and the filmstrip](docs/screens/watch.png)
+
 ## What you see
 
 - **Mannequins**: a wooden figure, as an artist's mannequin (an egg head, a chest with
@@ -27,6 +31,10 @@ and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you c
 - **Looks**: *solid* (the fighter's colour, easiest to read), *wood* (an artist's mannequin
   with joints in the fighter's colour) and *x-ray* (translucent, to see limbs hidden behind
   the other body).
+
+  | solid | wood | x-ray |
+  |---|---|---|
+  | ![solid look](docs/screens/look-solid.png) | ![wood look](docs/screens/look-wood.png) | ![x-ray look](docs/screens/look-hologram.png) |
 - **Joint load**: one reading per submission kind, lit on the attacked joint only.
 
   | kind | reading | danger from |
@@ -41,6 +49,8 @@ and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you c
   These are angles and distances, not forces: GrappleMap has neither forces nor timing.
   [docs/validation.md](docs/validation.md) checks them against every finish in the database
   (15 of 20 reach the danger range; the other five never get there in the animation).
+
+  ![Inside the armbar: the elbow lit, the ring on it and the injury notice](docs/screens/finish.png)
 - **Interface**: the move fills the screen. The camera is directed: for each keyframe it
   picks the angle that keeps the attacked joint in sight, shows the two bodies side by side
   rather than one behind the other, and stays near the previous angle; it glides there and
@@ -55,19 +65,30 @@ and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you c
   next moves, techniques, finishes and positions, each with a picture of where it ends)
   slides over the view from "Browse"; look, place, other cameras, speed and options sit
   behind ⚙. A short "how to use" shows on the first visit.
+
+  <table><tr>
+  <td width="70%"><img src="docs/screens/browse.png" alt="The panel open on the finishes tab, each move with a picture of where it ends"></td>
+  <td width="30%"><img src="docs/screens/phone.png" alt="The same move on a phone, dark theme"></td>
+  </tr></table>
 - **Fighters**: each one can be customized on a screen of its own, standing alone: build
   (slim to sturdy) and belt (white, blue, purple, brown, black). The contact solver is tuned
   to the standard build, so a much sturdier one may overlap a little more.
+
+  ![The fighters screen: build slider and belt colours](docs/screens/fighters.png)
 - **Places**: a competition mat (1 m tiles, 8 × 8 m area with a safety border), a gym (the
   mat in a room with padded walls), a plain studio (an endless backdrop where only shadows
   show depth) and the dark grid. All are drawn in code; nothing is downloaded.
+
+  | mat | gym | studio | dark grid |
+  |---|---|---|---|
+  | ![competition mat](docs/screens/place-mat.png) | ![gym](docs/screens/place-gym.png) | ![studio](docs/screens/place-studio.png) | ![dark grid](docs/screens/place-night.png) |
 - **Theme**: light or dark, following the system on the first visit.
 - **Reviewed techniques**: a transition can carry hand-written names (English and Portuguese),
   steps and notes from `data/techniques/`. Their text stays marked as a draft until reviewed.
 
 ## Languages
 
-16 languages, as in [mathra](https://github.com/matheusmota-dev-br/mathra): `pt-BR` (default),
+16 languages: `pt-BR` (default),
 `en`, `es`, `fr`, `de`, `it`, `ru`, `zh`, `ja`, `ko`, `hi`, `ar` (right to left), `id`, `tr`,
 `nl` and `pl`, chosen at the top of the panel. Each one is a JSON file in `apps/web/src/locales/`
 with the keys of `en.json`. Portuguese and English are reviewed; the other languages still
@@ -121,7 +142,8 @@ data/techniques/       reviewed techniques: one JSON file per transition
 data/body/capsules.json  thickness of each body part (metres), shared by the mannequin and
                        the contact solver
 tools/                 icon.svg, banner.html and brand.mjs, which renders docs/banner.png
-                       and the PNG icons from the running viewer
+                       and the PNG icons from the running viewer; screens.mjs, which takes
+                       the screenshots in docs/screens/
 packages/core/src/
   pose.ts              the skeleton; matches poses up to rotation, mirror and player swap
   contact.ts           offline contact solver and in-between frames

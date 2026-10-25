@@ -20,7 +20,8 @@
     "storybook": "pnpm --filter @bjj3d/storybook dev",
     "build-storybook": "pnpm --filter @bjj3d/storybook build",
     "character": "node tools/character.mjs",
-    "gi-plan": "node tools/gi-plan.mjs"
+    "gi-plan": "node tools/gi-plan.mjs",
+    "screens": "node tools/screens.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
