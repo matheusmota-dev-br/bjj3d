@@ -182,7 +182,7 @@ source of truth would make the data impossible to review and to reproduce.
 Cloth can bunch but not stretch, so segment lengths are a maximum and not a target: a
 segment may be shorter than at rest, never more than 5% longer.
 
-## Validation (`npm run validate`)
+## Validation (`pnpm validate`)
 
 | Rule | Tolerance |
 |---|---|

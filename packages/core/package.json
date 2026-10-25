@@ -11,6 +11,6 @@
     "./testing": "./src/testing/poses.ts"
   },
   "devDependencies": {
-    "@bjj3d/grapplemap": "*"
+    "@bjj3d/grapplemap": "workspace:*"
   }
 }

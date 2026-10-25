@@ -6,7 +6,7 @@
 //   apps/web/public/apple-touch-icon.png tools/icon.svg at 180 px
 //   apps/web/public/favicon-32.png  apps/web/public/favicon.svg at 32 px
 //
-// Needs the viewer running (npm run dev):
+// Needs the viewer running (pnpm dev):
 //   node tools/brand.mjs [http://localhost:5173]   CHROME=/path/to/chrome to override
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

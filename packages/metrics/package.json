@@ -9,12 +9,12 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@bjj3d/core": "*"
+    "@bjj3d/core": "workspace:*"
   },
   "peerDependencies": {
     "three": ">=0.181.0"
   },
   "devDependencies": {
-    "@bjj3d/grapplemap": "*"
+    "@bjj3d/grapplemap": "workspace:*"
   }
 }

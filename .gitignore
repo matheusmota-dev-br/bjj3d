@@ -13,3 +13,4 @@ packages/data/.cache/
 **/src/__image_snapshots__/
 apps/storybook/dist/
 storybook-static/
+.vite/

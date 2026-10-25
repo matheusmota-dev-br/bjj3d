@@ -4,15 +4,15 @@
   "type": "module",
   "scripts": {
     "dev": "storybook dev -p 6006",
-    "build": "npm run build -w @bjj3d/web && storybook build -o dist"
+    "build": "pnpm --filter @bjj3d/web build && storybook build -o dist"
   },
   "dependencies": {
-    "@bjj3d/core": "*",
-    "@bjj3d/data": "*",
-    "@bjj3d/editor": "*",
-    "@bjj3d/metrics": "*",
-    "@bjj3d/three": "*",
-    "@bjj3d/ui": "*",
+    "@bjj3d/core": "workspace:*",
+    "@bjj3d/data": "workspace:*",
+    "@bjj3d/editor": "workspace:*",
+    "@bjj3d/metrics": "workspace:*",
+    "@bjj3d/three": "workspace:*",
+    "@bjj3d/ui": "workspace:*",
     "three": "^0.181.0"
   },
   "devDependencies": {

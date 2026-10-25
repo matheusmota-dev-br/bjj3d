@@ -10,12 +10,12 @@
     "./server": "./src/editor-server.ts"
   },
   "dependencies": {
-    "@bjj3d/core": "*",
-    "@bjj3d/grapplemap": "*"
+    "@bjj3d/core": "workspace:*",
+    "@bjj3d/grapplemap": "workspace:*"
   },
   "peerDependencies": {
-    "@bjj3d/data": "*",
-    "@bjj3d/three": "*",
+    "@bjj3d/data": "workspace:*",
+    "@bjj3d/three": "workspace:*",
     "three": ">=0.181.0",
     "vite": ">=7"
   },

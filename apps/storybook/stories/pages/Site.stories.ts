@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/html-vite";
 
 /**
- * The site's screens, from its production build (served at /site/; run `npm run build`
- * before `npm run storybook`). Each page is the real app at an address.
+ * The site's screens, from its production build (served at /site/; run `pnpm build`
+ * before `pnpm storybook`). Each page is the real app at an address.
  */
 const meta: Meta<{ address: string }> = {
   title: "Pages/Site",

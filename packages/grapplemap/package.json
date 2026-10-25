@@ -9,6 +9,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@bjj3d/core": "*"
+    "@bjj3d/core": "workspace:*"
   }
 }

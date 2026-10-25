@@ -18,20 +18,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run typecheck
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm typecheck
       # Unit tests of every package and the site, in Node and in headless Chromium,
       # failing below 100% coverage.
-      - run: npm run data
-      - run: npm test
-      - run: npm run build
-      - run: npm run e2e
+      - run: pnpm data
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -39,6 +39,6 @@ jobs:
           path: apps/web/playwright-report/
           retention-days: 7
       # The validation report is generated; fail if the committed copy is stale.
-      - run: npm run validate && git diff --exit-code docs/validation.md
+      - run: pnpm validate && git diff --exit-code docs/validation.md
       # The catalog builds (it also builds the site, for its Pages level).
-      - run: npm run build-storybook
+      - run: pnpm build-storybook

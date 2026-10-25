@@ -6,7 +6,7 @@
 //                                  external, from the page's import map)
 //   tools/character/reference/*.jpg  the reference views, embedded as data URLs
 //
-//   node tools/character.mjs   (npm run character)
+//   node tools/character.mjs   (pnpm character)
 import { build } from "esbuild";
 import { readFileSync, writeFileSync } from "node:fs";
 
