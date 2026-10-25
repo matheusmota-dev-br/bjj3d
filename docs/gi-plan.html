@@ -1,0 +1,2173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gi Model Proposal</title>
+<meta name="description" content="How bjj3d stores the gi and the belt as pose state: free points, anchored regions, relations, the frame format, and a 3D preview over real GrappleMap positions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* Colours follow packages/ui/src/tokens.css: navy surfaces, amber and blue fighters. */
+  :root {
+    --bg: #eef1f5;
+    --panel: #ffffff;
+    --card: #f1f4f8;
+    --ink: #17212f;
+    --muted: #5b6b7f;
+    --line: #d5dce6;
+    --amber: #c98a12;
+    --blue: #1f6fc4;
+    --tension: #d7263d;
+    --ok: #1d8a5a;
+    --gi: #f4f1ea;
+    --gi-edge: #b9b2a2;
+    --lapel: #ddd6c6;
+    --region: rgb(31 111 196 / 0.14);
+    --scene: #e4e9f0;
+    --mat: #cfd8e3;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1726; --panel: #111c2e; --card: #18253b; --ink: #e8eef5; --muted: #93a6bd;
+      --line: #26385a; --amber: #f2b544; --blue: #5fb4ff; --tension: #ff4d6d; --ok: #4fd39a;
+      --gi: #e9e5dc; --gi-edge: #9c9586; --lapel: #cfc7b5; --region: rgb(95 180 255 / 0.18);
+      --scene: #0b1320; --mat: #1a2a42; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1726; --panel: #111c2e; --card: #18253b; --ink: #e8eef5; --muted: #93a6bd;
+    --line: #26385a; --amber: #f2b544; --blue: #5fb4ff; --tension: #ff4d6d; --ok: #4fd39a;
+    --gi: #e9e5dc; --gi-edge: #9c9586; --lapel: #cfc7b5; --region: rgb(95 180 255 / 0.18);
+    --scene: #0b1320; --mat: #1a2a42; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 "Source Sans 3", system-ui, sans-serif;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2.1rem; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.45rem; margin: 56px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.08rem; margin: 0 0 6px; }
+  p { margin: 0 0 12px; max-width: 72ch; }
+  .lede { color: var(--muted); font-size: 1.12rem; max-width: 70ch; }
+  code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.86em; }
+  code { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-x: auto; margin: 0 0 14px; line-height: 1.45; }
+  pre code { background: none; border: 0; padding: 0; }
+  .tag { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+  .p0 { color: var(--amber); } .p1 { color: var(--blue); }
+  .grid { display: grid; gap: 16px; }
+  .two { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .cards { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  @media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+  .card p { font-size: 0.95rem; }
+  .card svg { width: 100%; height: auto; display: block; margin-bottom: 10px; }
+  .cards .card svg .small { font-size: 14px; }
+  .cards .card svg .lbl { font-size: 15px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.94rem; margin: 0 0 14px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.84rem; }
+  .table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 14px; }
+  .table-wrap table { margin: 0; }
+
+  /* 3D preview */
+  .stage { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 0.9rem; border: 0; background: transparent; color: var(--ink); padding: 6px 11px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+  label.chk { display: inline-flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; user-select: none; }
+  .stage-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; }
+  @media (max-width: 820px) { .stage-body { grid-template-columns: minmax(0, 1fr); } }
+  #view { position: relative; min-height: 520px; background: var(--scene); touch-action: none; }
+  @media (max-width: 820px) { #view { min-height: 0; height: 400px; } }
+  #view canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+  #tip { position: absolute; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; font-size: 0.8rem; white-space: nowrap; display: none; z-index: 2; }
+  #view .hint { position: absolute; left: 10px; bottom: 8px; font-size: 0.78rem; color: var(--muted); }
+  #caption { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); width: min(92%, 560px); background: var(--glass, var(--panel)); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 0.95rem; text-align: center; z-index: 1; }
+  #caption .pt { display: block; color: var(--muted); font-size: 0.85rem; }
+  #caption .step { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  #fallback { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; color: var(--muted); }
+  .side { border-left: 1px solid var(--line); padding: 14px; font-size: 0.92rem; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  @media (max-width: 820px) { .side { border-left: 0; border-top: 1px solid var(--line); } }
+  .side h3 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 6px; }
+  .checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 5px; }
+  .checks li { display: grid; grid-template-columns: 18px 1fr auto; gap: 6px; align-items: baseline; }
+  .checks .v { font-family: "JetBrains Mono", monospace; font-size: 0.82rem; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .pass { background: var(--ok); } .fail { background: var(--tension); } .info { background: var(--muted); }
+  input[type="range"] { width: 100%; accent-color: var(--amber); }
+  .btn { font: inherit; font-size: 0.88rem; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 6px; padding: 4px 12px; cursor: pointer; }
+  select { font: inherit; font-size: 0.9rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+  .dof { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 0.88rem; }
+  .dof b { font-family: "JetBrains Mono", monospace; font-weight: 600; text-align: right; }
+
+  /* frame bar */
+  .bytes { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); font-size: 0.82rem; margin: 6px 0 4px; }
+  .bytes div { padding: 9px 10px; min-width: 0; }
+  .b-body { flex: 276; background: var(--card); }
+  .b-g0 { flex: 174; background: color-mix(in srgb, var(--amber) 22%, var(--panel)); }
+  .b-g1 { flex: 174; background: color-mix(in srgb, var(--blue) 22%, var(--panel)); }
+  .encoded { font-family: "JetBrains Mono", monospace; font-size: 0.74rem; word-break: break-all; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--muted); }
+  .encoded .s0 { color: var(--ink); } .encoded .s1 { color: var(--amber); } .encoded .s2 { color: var(--blue); }
+
+  /* svg palette */
+  svg text { font-family: "Source Sans 3", system-ui, sans-serif; fill: var(--ink); }
+  svg .muted { fill: var(--muted); }
+  svg .small { font-size: 11px; }
+  svg .lbl { font-size: 12px; }
+  .s-body { fill: var(--card); stroke: var(--line); }
+  .s-gi { fill: var(--gi); stroke: var(--gi-edge); stroke-width: 1.2; }
+  .s-sleeve { fill: none; stroke: var(--gi); stroke-linecap: round; }
+  .s-sleeve-edge { fill: none; stroke: var(--gi-edge); stroke-linecap: round; }
+  .s-lapel { fill: none; stroke: var(--lapel); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+  .s-lapel-edge { fill: none; stroke: var(--gi-edge); stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
+  .s-chain { fill: none; stroke: var(--blue); stroke-width: 2; }
+  .s-chain0 { fill: none; stroke: var(--amber); stroke-width: 2; }
+  .s-pt { fill: var(--blue); stroke: var(--panel); stroke-width: 1.5; }
+  .s-pt0 { fill: var(--amber); stroke: var(--panel); stroke-width: 1.5; }
+  .s-ptn { fill: #fff; font-size: 9px; font-weight: 700; }
+  .s-region { fill: var(--region); stroke: var(--blue); stroke-dasharray: 4 3; }
+  .s-belt { fill: #6a3a9c; }
+  .s-line { stroke: var(--muted); stroke-width: 1; fill: none; }
+  .s-dash { stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 4 4; fill: none; }
+  .s-bone { stroke: var(--line); stroke-linecap: round; fill: none; }
+  .s-tension { stroke: var(--tension); fill: none; }
+  .s-box { fill: var(--panel); stroke: var(--line); }
+  .s-box-hi { fill: color-mix(in srgb, var(--amber) 16%, var(--panel)); stroke: var(--amber); }
+  .s-arrow { stroke: var(--muted); stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
+  .s-mat { fill: var(--card); }
+  .legend { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 0.93rem; }
+  .legend li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: baseline; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid var(--line); }
+  .note { font-size: 0.88rem; color: var(--muted); }
+  .phases { counter-reset: ph; list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .phases li { counter-increment: ph; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 12px 50px; position: relative; }
+  .phases li::before { content: counter(ph); position: absolute; left: 14px; top: 11px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--panel); font-weight: 700; font-size: 0.85rem; display: grid; place-items: center; }
+  .belt-row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 10px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 0; }
+  .toc a { font-size: 0.88rem; color: var(--ink); text-decoration: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; background: var(--panel); }
+  .toc a:hover { border-color: var(--muted); }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<main>
+  <span class="tag">Proposal · not built yet · companion to docs/gi-plan.md</span>
+  <h1>The gi and the belt as part of the pose</h1>
+  <p class="lede">GrappleMap stores two skeletons of 23 joints and nothing else, which is enough for no-gi.
+    In gi jiu-jitsu the cloth is part of the technique: a lapel pulled out from under the belt and fed
+    around a leg, a collar opened for a choke, a belt held to control the back. This page shows how the
+    gi becomes a second layer of state, frame by frame, without changing the skeleton.</p>
+  <nav class="toc">
+    <a href="#preview">3D preview</a><a href="#points">gi@1 points</a><a href="#relations">Relations</a>
+    <a href="#disk">On disk</a><a href="#example">A technique</a><a href="#pipeline">Drape and build</a>
+    <a href="#validate">Validation</a><a href="#belt">Belt</a><a href="#packages">Packages</a><a href="#phases">Phases</a>
+  </nav>
+
+  <h2 id="preview">1. Two layers over real positions</h2>
+  <p>Positions and one transition from <code>GrappleMap.txt</code>, put through the repository's contact solver
+    (<code>packages/core/src/contact.ts</code>) with its capsules thickened by the gi, as in the plan. The gi@1 points are draped in this page,
+    and the fabric is built from them: each jacket panel's front edge runs through its lapel chain, the skirt's bottom through
+    <code>BackHem</code>, each sleeve ends at its cuff, the belt's tails follow their chains. The points are the cloth's handles,
+    the way bones are a skin's. Pull a point with the grip slider and the panel comes with it. Hover a point to see its name.
+    The fighters are the site's wooden mannequin (<code>packages/three/src/mannequin.ts</code>), and the gi is laid on its pieces.</p>
+
+  <div class="stage">
+    <div class="stage-bar">
+      <div class="seg" role="group" aria-label="Position" id="poseSeg">
+        <button data-pose="standing" aria-pressed="true">Standing</button>
+        <button data-pose="guard" aria-pressed="false">Closed guard</button>
+        <button data-pose="back" aria-pressed="false">Back</button>
+        <button data-pose="transition" aria-pressed="false">Transition</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="tBody" checked> body</label>
+      <label class="chk"><input type="checkbox" id="tGi" checked> gi</label>
+      <label class="chk"><input type="checkbox" id="tPts" checked> free points</label>
+      <label class="chk"><input type="checkbox" id="tReg"> anchored regions</label>
+      <label class="chk"><input type="checkbox" id="tSkel"> skeleton</label>
+    </div>
+    <div class="stage-body">
+      <div id="view">
+        <div id="tip"></div>
+        <div id="caption" hidden></div>
+        <div id="fallback">The 3D preview needs WebGL and access to cdn.jsdelivr.net.<br>Everything else on this page works without it.</div>
+        <span class="hint">drag to orbit · scroll to zoom</span>
+      </div>
+      <div class="side">
+        <div>
+          <h3>Position</h3>
+          <div id="poseInfo" class="note"></div>
+        </div>
+        <div id="transBox" hidden>
+          <h3>Transition</h3>
+          <div class="note" style="margin-bottom:8px">Seven GrappleMap keyframes, solved and densified by the contact solver to 13 frames. Each frame gets its drape; in between, joints and gi points are interpolated, and the fabric is rebuilt from them every frame.</div>
+          <div style="display:flex;gap:8px;align-items:center"><button class="btn" id="play">Pause</button><input type="range" id="scrub" min="0" max="12" step="0.01" value="0" aria-label="Frame"></div>
+          <div class="note mono" id="frameOut" style="margin-top:4px"></div>
+        </div>
+        <div id="gripBox">
+          <h3>Grip</h3>
+          <div id="gripInfo" class="note" style="margin-bottom:6px"></div>
+          <input type="range" id="pull" min="0" max="1" step="0.01" value="0" aria-label="Pull the cloth toward the hand">
+          <div class="note" style="display:flex;justify-content:space-between"><span>at rest</span><span>cloth at the hand</span></div>
+          <label class="chk" style="margin-top:8px"><input type="checkbox" id="tUntuck"> target's lapel untucked</label>
+        </div>
+        <div>
+          <h3>Validation</h3>
+          <ul class="checks" id="checks"></ul>
+        </div>
+        <div>
+          <h3>Degrees of freedom per frame</h3>
+          <div class="dof">
+            <span>skeleton, 2 × 23 joints × 3</span><b>138</b>
+            <span>gi@1, 2 × 29 points × 3</span><b>174</b>
+            <span>total</span><b>312</b>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:8px">The jacket follows the spine (MidHip → Core → Neck), the belt cinches it at the waist, and no vertex of any
+    piece is left inside a piece of either mannequin: the other fighter's hands, knees and feet press the cloth instead of passing through it.
+    Sleeves and pants are laid on the mannequin's own limbs, ring by ring in each piece's frame, with a fan of rings turning about the elbow
+    and the knee: the outside of a bend always has a joint's width of fabric over it and the inside folds, so no bend opens the cloth onto the body.
+    The fabric is procedural (no modelled garment yet) and has no wrinkles; an authored gi mesh would bind to the same points.</p>
+
+  <h2 id="points">2. gi@1: free points and anchored regions</h2>
+  <p>The rule that keeps the new degrees of freedom small: <b>a free point only where the cloth can leave the body</b>.
+    Where the cloth follows the body (sleeve, pants, belt band), nothing is stored. A grip there names a place on a bone,
+    and that place moves with the skeleton.</p>
+
+  <div class="grid two">
+    <div class="card">
+      <svg viewBox="0 0 460 600" role="img" aria-label="Front view of a fighter in a gi with the free points numbered">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker>
+        </defs>
+        <!-- head, hands, feet -->
+        <circle cx="230" cy="58" r="30" class="s-body"/>
+        <rect x="218" y="84" width="24" height="22" rx="6" class="s-body"/>
+        <circle cx="128" cy="318" r="13" class="s-body"/><circle cx="332" cy="318" r="13" class="s-body"/>
+        <ellipse cx="186" cy="566" rx="20" ry="10" class="s-body"/><ellipse cx="274" cy="566" rx="20" ry="10" class="s-body"/>
+        <!-- pants -->
+        <path d="M196 372 L190 470 L188 548" class="s-sleeve-edge" stroke-width="48"/>
+        <path d="M264 372 L270 470 L272 548" class="s-sleeve-edge" stroke-width="48"/>
+        <path d="M196 372 L190 470 L188 548" class="s-sleeve" stroke-width="45"/>
+        <path d="M264 372 L270 470 L272 548" class="s-sleeve" stroke-width="45"/>
+        <!-- sleeves -->
+        <path d="M162 124 L138 222 L130 292" class="s-sleeve-edge" stroke-width="37"/>
+        <path d="M298 124 L322 222 L330 292" class="s-sleeve-edge" stroke-width="37"/>
+        <path d="M162 124 L138 222 L130 292" class="s-sleeve" stroke-width="34"/>
+        <path d="M298 124 L322 222 L330 292" class="s-sleeve" stroke-width="34"/>
+        <!-- jacket -->
+        <path d="M158 116 Q230 100 302 116 L298 300 L162 300 Z" class="s-gi"/>
+        <path d="M162 300 L298 300 L302 372 Q230 384 158 372 Z" class="s-gi"/>
+        <!-- anchored regions -->
+        <path d="M142 128 L120 222 L112 292 L148 292 L156 222 L180 128 Z" class="s-region"/>
+        <path d="M248 374 L292 374 L296 548 L250 548 Z" class="s-region"/>
+        <!-- lapels: the right one first, the left one over it -->
+        <polyline points="212,100 204,126 214,162 232,200 246,244 258,298 264,372" class="s-lapel-edge"/>
+        <polyline points="212,100 204,126 214,162 232,200 246,244 258,298 264,372" class="s-lapel"/>
+        <polyline points="248,100 256,126 246,160 228,200 214,242 202,298 196,372" class="s-lapel-edge"/>
+        <polyline points="248,100 256,126 246,160 228,200 214,242 202,298 196,372" class="s-lapel"/>
+        <!-- belt -->
+        <rect x="158" y="292" width="144" height="15" rx="4" class="s-belt" id="svgBelt"/>
+        <path d="M226 306 Q222 330 216 372 M234 306 Q240 330 246 372" stroke-width="11" stroke-linecap="round" fill="none" class="s-belt-tail" id="svgTails" style="stroke:#6a3a9c"/>
+        <rect x="220" y="288" width="20" height="24" rx="4" class="s-belt" id="svgKnot"/>
+        <!-- hem, behind -->
+        <path d="M160 368 Q230 396 300 368" class="s-dash"/>
+        <!-- points: right lapel (blue) -->
+        <g>
+          <circle cx="212" cy="100" r="7" class="s-pt"/><text x="212" y="103" text-anchor="middle" class="s-ptn">0</text>
+          <circle cx="204" cy="126" r="7" class="s-pt"/><text x="204" y="129" text-anchor="middle" class="s-ptn">1</text>
+          <circle cx="214" cy="162" r="7" class="s-pt"/><text x="214" y="165" text-anchor="middle" class="s-ptn">2</text>
+          <circle cx="234" cy="202" r="7" class="s-pt"/><text x="234" y="205" text-anchor="middle" class="s-ptn">3</text>
+          <circle cx="246" cy="244" r="7" class="s-pt"/><text x="246" y="247" text-anchor="middle" class="s-ptn">4</text>
+          <circle cx="258" cy="298" r="7" class="s-pt"/><text x="258" y="301" text-anchor="middle" class="s-ptn">5</text>
+          <circle cx="264" cy="372" r="7" class="s-pt"/><text x="264" y="375" text-anchor="middle" class="s-ptn">6</text>
+        </g>
+        <!-- points: left lapel (amber) -->
+        <g>
+          <circle cx="248" cy="100" r="7" class="s-pt0"/><text x="248" y="103" text-anchor="middle" class="s-ptn">0</text>
+          <circle cx="256" cy="126" r="7" class="s-pt0"/><text x="256" y="129" text-anchor="middle" class="s-ptn">1</text>
+          <circle cx="246" cy="160" r="7" class="s-pt0"/><text x="246" y="163" text-anchor="middle" class="s-ptn">2</text>
+          <circle cx="226" cy="198" r="7" class="s-pt0"/><text x="226" y="201" text-anchor="middle" class="s-ptn">3</text>
+          <circle cx="214" cy="242" r="7" class="s-pt0"/><text x="214" y="245" text-anchor="middle" class="s-ptn">4</text>
+          <circle cx="202" cy="298" r="7" class="s-pt0"/><text x="202" y="301" text-anchor="middle" class="s-ptn">5</text>
+          <circle cx="196" cy="372" r="7" class="s-pt0"/><text x="196" y="375" text-anchor="middle" class="s-ptn">6</text>
+        </g>
+        <!-- other points -->
+        <circle cx="230" cy="92" r="6" fill="none" stroke="var(--ink)" stroke-dasharray="2 2"/>
+        <circle cx="230" cy="300" r="5" fill="var(--ink)"/>
+        <circle cx="216" cy="338" r="4" fill="var(--ink)"/><circle cx="216" cy="372" r="4" fill="var(--ink)"/>
+        <circle cx="244" cy="338" r="4" fill="var(--ink)"/><circle cx="246" cy="372" r="4" fill="var(--ink)"/>
+        <circle cx="160" cy="368" r="4" fill="var(--ink)"/><circle cx="230" cy="382" r="4" fill="none" stroke="var(--ink)" stroke-dasharray="2 2"/><circle cx="300" cy="368" r="4" fill="var(--ink)"/>
+        <circle cx="130" cy="292" r="5" fill="var(--ink)"/><circle cx="330" cy="292" r="5" fill="var(--ink)"/>
+        <circle cx="188" cy="546" r="5" fill="var(--ink)"/><circle cx="272" cy="546" r="5" fill="var(--ink)"/>
+        <!-- callouts -->
+        <path d="M236 90 L300 60" class="s-line"/><text x="304" y="58" class="lbl">Nape (behind the neck)</text>
+        <path d="M262 126 L320 118" class="s-line"/><text x="324" y="116" class="lbl p0" style="fill:var(--amber)">LeftLapel 0–6</text>
+        <path d="M198 126 L120 104" class="s-line"/><text x="20" y="102" class="lbl" style="fill:var(--blue)">RightLapel 0–6</text>
+        <path d="M240 300 L330 340" class="s-line"/><text x="334" y="344" class="lbl">BeltKnot</text>
+        <path d="M250 372 L330 392" class="s-line"/><text x="334" y="396" class="lbl">Left/RightBeltTail 0–2</text>
+        <path d="M156 368 L60 400" class="s-line"/><text x="20" y="416" class="lbl">BackHem 0–2</text><text x="20" y="430" class="small muted">(right side, back, left side)</text>
+        <path d="M124 292 L60 286" class="s-line"/><text x="20" y="276" class="lbl">RightCuff</text>
+        <path d="M184 546 L90 560" class="s-line"/><text x="20" y="574" class="lbl">RightPantsCuff</text>
+        <text x="20" y="176" class="lbl" style="fill:var(--blue)">RightSleeve</text><text x="20" y="190" class="small muted">region</text><text x="20" y="203" class="small muted">t: shoulder → cuff</text>
+        <path d="M100 196 L128 214" class="s-line"/>
+        <text x="306" y="470" class="lbl" style="fill:var(--blue)">LeftPants</text><text x="306" y="484" class="small muted">region, t: hip → cuff</text>
+        <text x="230" y="596" text-anchor="middle" class="small muted">Front view: the fighter's left is on the right of the drawing.</text>
+      </svg>
+    </div>
+    <div class="card">
+      <h3>The 29 points, per player</h3>
+      <ul class="legend">
+        <li><span class="swatch" style="background:var(--ink)"></span><span><code>Nape</code>: the back of the collar, where both lapels start.</span></li>
+        <li><span class="swatch" style="background:var(--amber)"></span><span><code>LeftLapel</code> ×7: <code>0</code> neck side, <code>1</code> collarbone, <code>2</code> upper chest, <code>3</code> sternum, <code>4</code> lower chest, <code>5</code> at the belt, <code>6</code> skirt corner. The left panel crosses over the right one.</span></li>
+        <li><span class="swatch" style="background:var(--blue)"></span><span><code>RightLapel</code> ×7: the same edge on the right panel, under the left one.</span></li>
+        <li><span class="swatch" style="background:var(--ink)"></span><span><code>BackHem</code> ×3, the cuffs ×4, <code>BeltKnot</code>, two <code>BeltTail</code>s ×3.</span></li>
+      </ul>
+      <h3 style="margin-top:18px">Anchored regions (no stored points)</h3>
+      <div class="table-wrap"><table>
+        <tr><th>Region</th><th>Parameter</th><th>Follows</th></tr>
+        <tr><td><code>Left/RightSleeve</code></td><td><code>t</code> 0 shoulder → 1 cuff</td><td>Shoulder → Elbow → Cuff</td></tr>
+        <tr><td><code>Left/RightPants</code></td><td><code>t</code> 0 hip → 1 cuff</td><td>Hip → Knee → PantsCuff</td></tr>
+        <tr><td><code>Belt</code></td><td><code>θ</code> 0 knot → 0.5 back</td><td>the waist</td></tr>
+        <tr><td><code>Jacket</code></td><td><code>u</code> around, <code>v</code> up</td><td>the torso (lat, shoulder grips)</td></tr>
+      </table></div>
+      <svg viewBox="0 0 300 130" role="img" aria-label="Top view of the belt with the angle parameter">
+        <text x="10" y="18" class="lbl">Belt, seen from above</text>
+        <ellipse cx="150" cy="72" rx="80" ry="36" fill="none" stroke="#6a3a9c" stroke-width="9" id="svgBeltTop"/>
+        <rect x="142" y="100" width="16" height="16" rx="3" fill="#6a3a9c"/>
+        <text x="150" y="128" text-anchor="middle" class="small">θ = 0 (knot, front)</text>
+        <text x="150" y="30" text-anchor="middle" class="small">θ = 0.5 (back)</text>
+        <path d="M232 64 A82 40 0 0 0 190 38" class="s-arrow"/>
+        <text x="236" y="52" class="small muted">θ grows</text>
+      </svg>
+    </div>
+  </div>
+
+  <h3 style="margin-top:22px">One way to name any target</h3>
+<pre><code>{ "player": 1, "chain": "LeftLapel", "at": 3.4 }    between points 3 and 4
+{ "player": 1, "point": "Nape" }                    a single point
+{ "player": 0, "region": "LeftSleeve", "t": 0.9 }   near the cuff: an Ezekiel grips here
+{ "player": 1, "region": "Belt", "θ": 0.5 }         the back of the belt</code></pre>
+
+  <h2 id="relations">3. Relations: what positions cannot say</h2>
+  <p>At this resolution, seven points cannot tell whether a lapel goes behind a leg or in front of it. So topology is stored
+    explicitly, over a range of keyframes, and the validator checks it against the positions.</p>
+  <div class="grid cards">
+    <div class="card">
+      <svg viewBox="0 0 300 190" role="img" aria-label="A hand gripping a lapel between points 3 and 4">
+        <polyline points="30,36 64,56 98,80 130,100 166,116 204,128 248,150" class="s-chain"/>
+        <g class="s-pt"><circle cx="30" cy="36" r="6"/><circle cx="64" cy="56" r="6"/><circle cx="98" cy="80" r="6"/><circle cx="130" cy="100" r="6"/><circle cx="166" cy="116" r="6"/><circle cx="204" cy="128" r="6"/><circle cx="248" cy="150" r="6"/></g>
+        <text x="30" y="24" text-anchor="middle" class="small muted">0</text><text x="130" y="88" text-anchor="middle" class="small muted">3</text><text x="166" y="104" text-anchor="middle" class="small muted">4</text><text x="248" y="138" text-anchor="middle" class="small muted">6</text>
+        <circle cx="144" cy="106" r="7" fill="none" stroke="var(--amber)" stroke-width="2.5"/>
+        <rect x="126" y="146" width="44" height="26" rx="10" fill="var(--amber)" opacity="0.85"/>
+        <path d="M148 146 L145 114" class="s-tension" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <text x="178" y="166" class="small">≤ 6 cm</text>
+        <text x="10" y="186" class="small muted">on: LeftLapel@3.4 · by: RightHand</text>
+      </svg>
+      <h3>grip</h3>
+      <p>A hand holds a target. <code>kind</code> (fingers-in, thumb-in, pistol, pocket, pinch) is optional. Checked: the hand within 6 cm of the target.</p>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 300 190" role="img" aria-label="A lapel wrapping a leg, with the winding number">
+        <path d="M40 160 L190 40" class="s-bone" stroke-width="34"/>
+        <text x="30" y="182" class="small muted">bone LeftKnee → LeftAnkle</text>
+        <path d="M70 70 C110 80 130 100 140 112" class="s-chain" stroke-width="3"/>
+        <path d="M140 112 C150 122 100 150 92 128 C86 112 120 96 150 98" class="s-chain" stroke-width="3" stroke-dasharray="5 4"/>
+        <path d="M150 98 C170 100 190 120 200 150" class="s-chain" stroke-width="3"/>
+        <circle cx="250" cy="70" r="12" fill="var(--line)"/>
+        <path d="M250 40 A30 30 0 1 1 222 82" class="s-arrow" style="stroke:var(--blue)"/>
+        <text x="250" y="126" text-anchor="middle" class="small">Σ Δθ / 2π ≈ 1</text>
+        <text x="250" y="140" text-anchor="middle" class="small muted">across the bone</text>
+      </svg>
+      <h3>wrap</h3>
+      <p>A stretch of a chain goes around a bone, <code>turns</code> times (signed). Checked: the winding number of the stretch, projected across the bone, within ±0.25.</p>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 300 190" role="img" aria-label="Lapel tucked under the belt and untucked">
+        <text x="75" y="18" text-anchor="middle" class="lbl">tucked (default)</text>
+        <text x="225" y="18" text-anchor="middle" class="lbl">untucked</text>
+        <rect x="10" y="80" width="130" height="14" rx="3" fill="#6a3a9c"/>
+        <path d="M40 30 L70 80" class="s-chain" stroke-width="3"/><path d="M70 80 L76 94" class="s-chain" stroke-width="3" stroke-dasharray="3 3"/><path d="M76 94 L82 150" class="s-chain" stroke-width="3"/>
+        <circle cx="73" cy="87" r="6" class="s-pt"/><circle cx="82" cy="150" r="6" class="s-pt"/>
+        <text x="90" y="112" class="small muted">5 held</text>
+        <rect x="160" y="80" width="130" height="14" rx="3" fill="#6a3a9c"/>
+        <path d="M190 30 L220 76 C236 90 262 120 278 168" class="s-chain" stroke-width="3"/>
+        <circle cx="230" cy="86" r="6" class="s-pt"/><circle cx="278" cy="168" r="6" class="s-pt"/>
+        <text x="186" y="130" class="small muted">5 free</text>
+      </svg>
+      <h3>untucked (state)</h3>
+      <p>Whether the belt still holds a lapel. Tucked, point <code>5</code> stays at the belt band (4 cm). Untucked, the lapel can be pulled out and fed.</p>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 300 190" role="img" aria-label="Cloth pinned under a thigh against the mat">
+        <rect x="0" y="160" width="300" height="30" class="s-mat"/>
+        <path d="M50 132 L250 132" class="s-bone" stroke-width="44"/>
+        <polyline points="30,120 70,156 110,157 150,157 190,157 230,156 270,120" class="s-chain" stroke-width="3"/>
+        <g class="s-pt"><circle cx="70" cy="156" r="5"/><circle cx="110" cy="157" r="5"/><circle cx="150" cy="157" r="5"/><circle cx="190" cy="157" r="5"/><circle cx="230" cy="156" r="5"/></g>
+        <text x="150" y="70" text-anchor="middle" class="small muted">thigh capsule</text>
+        <text x="150" y="182" text-anchor="middle" class="small">every point within 2 cm of the capsule</text>
+      </svg>
+      <h3>pin</h3>
+      <p>Cloth trapped under a body part, against the mat or the other body. Checked: each point of the stretch within 2 cm of that bone's capsule.</p>
+    </div>
+  </div>
+  <p class="note">A lapel feed needs no new relation: pulled out, under the arm, back to the other hand is <code>untucked</code> + <code>wrap</code> + <code>grip</code>.</p>
+
+  <h2 id="disk">4. A frame on disk</h2>
+  <p>Each frame keeps GrappleMap's encoding: two base-62 digits per coordinate, millimetre steps, absolute coordinates.
+    So <code>mirror</code> and <code>reorient</code> move the gi with the bodies, swapping <code>Left…</code> and <code>Right…</code> chains by the same rule as joints.</p>
+  <div class="bytes">
+    <div class="b-body">skeleton, both players · 276</div>
+    <div class="b-g0">gi, player 0 · 174</div>
+    <div class="b-g1">gi, player 1 · 174</div>
+  </div>
+  <p class="note">The current preview position, encoded. Skeleton straight from GrappleMap.txt; gi from the drape on this page.</p>
+  <div class="encoded" id="encoded"></div>
+
+  <h3 style="margin-top:22px">A block: one JSON file per position or transition, with a stable id</h3>
+<pre><code>{
+  "format": "bjj3d/block@1",
+  "id": "cross-collar-choke-from-closed-guard",
+  "name": "cross collar choke from closed guard",
+  "tags": ["closed_guard", "cross_collar_choke"],
+  "properties": ["bottom"],
+  "attire": ["gi@1", "gi@1"],
+  "frames": [
+    { "pose": "zfazzGwOazEX…", "attire": ["Kd3aQ…", "Lm0bT…"] },
+    …
+  ],
+  "relations": [
+    { "type": "grip", "frames": [1, 7], "by": { "player": 1, "hand": "RightHand" },
+      "on": { "player": 0, "chain": "RightLapel", "at": 0.5 }, "kind": "fingers-in" },
+    { "type": "grip", "frames": [3, 7], "by": { "player": 1, "hand": "LeftHand" },
+      "on": { "player": 0, "chain": "LeftLapel", "at": 0.5 }, "kind": "thumb-in" }
+  ],
+  "from": "distance-closed-guard"
+}</code></pre>
+  <div class="table-wrap"><table>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td><code>attire</code></td><td>Per player: a gi against a rash guard is allowed.</td></tr>
+    <tr><td><code>frames[].attire</code></td><td>Optional. Without it, the rest drape. Every GrappleMap block is therefore a valid gi block with no relations.</td></tr>
+    <tr><td><code>from</code>, <code>to</code></td><td>Ids, still checked geometrically with <code>isReoriented</code>.</td></tr>
+    <tr><td>GrappleMap</td><td>Stays read-only. <code>data/grapplemap/ids.json</code> gives each block an id keyed by line and a hash of its poses; techniques reference ids, not lines.</td></tr>
+  </table></div>
+
+  <h2 id="example">5. A technique, relation by relation</h2>
+  <p>A cross collar choke from closed guard. Player 1 is the bottom player in GrappleMap's convention. The steps are illustrative; the real frames are made in the editor.</p>
+  <div class="card" style="overflow-x:auto">
+    <svg viewBox="0 0 860 250" style="min-width:640px" role="img" aria-label="Timeline of grips and readings over eight frames">
+      <g id="tl"></g>
+    </svg>
+  </div>
+  <div class="table-wrap" style="margin-top:14px"><table>
+    <tr><th>Technique</th><th>What it needs</th></tr>
+    <tr><td>Ezekiel from mount</td><td>A grip on the player's own sleeve: <code>by</code> and <code>on</code> are the same player (<code>LeftSleeve</code>, <code>t ≈ 0.95</code>).</td></tr>
+    <tr><td>Bow and arrow from the back</td><td>A collar grip on <code>LeftLapel@0.5</code>, a pants grip at the knee, the reading of the collar loop.</td></tr>
+    <tr><td>Lapel feed from the back</td><td><code>untucked</code>, then <code>wrap</code> of the lapel around the arm, then a grip on its end with the other hand.</td></tr>
+    <tr><td>Worm guard</td><td>The top player's lapel untucked, a <code>wrap</code> around the guard player's own leg, a grip on the end. The relation crosses players.</td></tr>
+    <tr><td>Back control with a belt grip</td><td>A grip on <code>Belt</code>, <code>θ = 0.5</code>.</td></tr>
+    <tr><td>Spider guard</td><td>Sleeve grips at <code>t ≈ 0.9</code>. The foot on the biceps is an open question: a foot <code>grip</code>, or a <code>push</code>?</td></tr>
+  </table></div>
+
+  <h2 id="pipeline">6. Drape and build</h2>
+  <p>Physics is a tool here, and the stored points are what counts. A cloth simulation as the source of truth could be neither reviewed nor reproduced.</p>
+  <div class="card" style="overflow-x:auto">
+    <svg viewBox="0 0 900 230" style="min-width:680px" role="img" aria-label="Data pipeline from sources to the viewer">
+      <rect x="10" y="20" width="160" height="56" rx="8" class="s-box"/><text x="90" y="44" text-anchor="middle" class="lbl">GrappleMap.txt</text><text x="90" y="62" text-anchor="middle" class="small muted">+ ids.json</text>
+      <rect x="10" y="110" width="160" height="56" rx="8" class="s-box"/><text x="90" y="134" text-anchor="middle" class="lbl">data/blocks/*.json</text><text x="90" y="152" text-anchor="middle" class="small muted">gi points + relations</text>
+      <rect x="210" y="64" width="140" height="56" rx="8" class="s-box"/><text x="280" y="88" text-anchor="middle" class="lbl">merge by id</text><text x="280" y="106" text-anchor="middle" class="small muted">from/to checked</text>
+      <rect x="390" y="64" width="150" height="56" rx="8" class="s-box"/><text x="465" y="88" text-anchor="middle" class="lbl">contact solver</text><text x="465" y="106" text-anchor="middle" class="small muted">bodies, as today</text>
+      <rect x="580" y="64" width="150" height="56" rx="8" class="s-box-hi"/><text x="655" y="88" text-anchor="middle" class="lbl">cloth projection</text><text x="655" y="106" text-anchor="middle" class="small muted">in-betweens, relations</text>
+      <rect x="770" y="64" width="120" height="56" rx="8" class="s-box"/><text x="830" y="88" text-anchor="middle" class="lbl">graph.json</text><text x="830" y="106" text-anchor="middle" class="small muted">+ validate</text>
+      <path d="M170 48 L208 82" class="s-arrow"/><path d="M170 138 L208 104" class="s-arrow"/>
+      <path d="M350 92 L388 92" class="s-arrow"/><path d="M540 92 L578 92" class="s-arrow"/><path d="M730 92 L768 92" class="s-arrow"/>
+      <rect x="580" y="160" width="310" height="56" rx="8" class="s-box-hi"/><text x="735" y="184" text-anchor="middle" class="lbl">viewer: rest drape at runtime</text><text x="735" y="202" text-anchor="middle" class="small muted">for frames without stored gi points</text>
+      <path d="M830 120 L830 158" class="s-arrow"/>
+    </svg>
+  </div>
+  <div class="grid cards" style="margin-top:14px">
+    <div class="card"><h3>Rest drape</h3><p>The points laid on the torso's frame (Neck, MidHip, the shoulder line), then a fixed number of position-based steps: gravity on hanging points, no segment longer than rest, nothing inside the mannequin or under the mat. Deterministic, so it is what this page runs.</p></div>
+    <div class="card"><h3>In-between frames</h3><p>Densifying interpolates gi points linearly, then projects the same constraints, with that frame range's relations as hard constraints: a gripped point stays at the hand.</p></div>
+    <div class="card"><h3>The fabric follows the points</h3><p>The drawn gi is a mesh built from the skeleton, with the gi points as its handles: each jacket panel's front edge runs through its lapel chain, the skirt's bottom through <code>BackHem</code>, each sleeve ends at its cuff, the belt's tails follow their chains. An authored garment would bind to the same points, as a skin binds to bones.</p></div>
+    <div class="card"><h3>Cloth never moves the body</h3><p>In gi@1, pulling a lapel does not drag the opponent. Tension is a reading, not a force. Cloth can bunch but not stretch: at most 105% of rest length.</p></div>
+  </div>
+
+  <h2 id="validate">7. Validation</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Rule</th><th>Tolerance</th></tr>
+    <tr><td>Segment length</td><td>≤ 105% of rest (rest scales with the torso)</td></tr>
+    <tr><td><code>Nape</code> and lapel point <code>0</code> on the collar line</td><td>3 cm</td></tr>
+    <tr><td>A tucked lapel's point <code>5</code> at the belt band</td><td>4 cm</td></tr>
+    <tr><td><code>grip</code>: hand at the target</td><td>6 cm</td></tr>
+    <tr><td><code>wrap</code>: winding number around the bone</td><td><code>turns</code> ± 0.25</td></tr>
+    <tr><td><code>pin</code>: stretch at the bone's capsule</td><td>2 cm</td></tr>
+    <tr><td>No gi point inside a capsule</td><td>1 cm, as the solver's <code>OVERLAP</code></td></tr>
+    <tr><td>Relations name existing chains, points and frames</td><td>exact</td></tr>
+  </table></div>
+  <p class="note">Collar chokes and the Ezekiel become metrics: two collar grips (or one grip and the Nape) form a loop around the neck, and the reading is how much shorter the loop is than at rest. Calibrated like the others in <code>docs/validation.md</code>.</p>
+
+  <h2 id="belt">8. Appearance: gi colour, belt, degrees</h2>
+  <p>Appearance is the fighter's option, not the block's: the same transition can be watched in any gi. Today every mannequin wears a belt; with attire, the belt belongs to the gi, and no-gi fighters have none.</p>
+  <div class="card">
+    <div class="belt-row">
+      <label>Rank <select id="rank">
+        <option value="white">white</option><option value="blue">blue</option><option value="purple" selected>purple</option>
+        <option value="brown">brown</option><option value="black">black</option>
+        <option value="grey">grey (kids)</option><option value="yellow">yellow (kids)</option><option value="orange">orange (kids)</option><option value="green">green (kids)</option>
+      </select></label>
+      <label>Degrees <input type="range" id="degrees" min="0" max="4" value="2" style="width:140px;vertical-align:middle"> <span id="degOut" class="mono">2</span></label>
+      <label>Gi <select id="giColor"><option value="white">white</option><option value="blue">blue</option><option value="black">black</option></select></label>
+    </div>
+    <svg viewBox="0 0 640 90" role="img" aria-label="Belt with its rank bar and degrees" id="beltSvg"></svg>
+    <p class="note">Coloured belts: 0 to 4 white stripes on a black bar. Black belt: a red bar, 0 to 6 degrees. Kids' ranks show that ranks are a registry, like <code>BELT_COLORS</code> today. The choice also paints the 3D preview.</p>
+  </div>
+
+  <h2 id="packages">9. Packages</h2>
+  <div class="grid two">
+    <div class="card">
+      <svg viewBox="0 0 420 230" role="img" aria-label="Package dependency graph with the new attire package">
+        <rect x="20" y="92" width="90" height="40" rx="8" class="s-box"/><text x="65" y="117" text-anchor="middle" class="lbl">core</text>
+        <rect x="160" y="92" width="100" height="40" rx="8" class="s-box-hi"/><text x="210" y="117" text-anchor="middle" class="lbl">attire (new)</text>
+        <rect x="310" y="92" width="90" height="40" rx="8" class="s-box"/><text x="355" y="117" text-anchor="middle" class="lbl">three</text>
+        <rect x="310" y="170" width="90" height="40" rx="8" class="s-box"/><text x="355" y="195" text-anchor="middle" class="lbl">editor</text>
+        <rect x="120" y="16" width="90" height="40" rx="8" class="s-box"/><text x="165" y="41" text-anchor="middle" class="lbl">data</text>
+        <rect x="230" y="16" width="90" height="40" rx="8" class="s-box"/><text x="275" y="41" text-anchor="middle" class="lbl">metrics</text>
+        <path d="M160 112 L112 112" class="s-arrow"/><path d="M310 112 L262 112" class="s-arrow"/>
+        <path d="M355 170 L355 134" class="s-arrow"/><path d="M180 56 L200 90" class="s-arrow"/><path d="M262 56 L226 90" class="s-arrow"/>
+        <text x="20" y="222" class="small muted">arrows point at what a package depends on</text>
+      </svg>
+    </div>
+    <div class="card">
+      <ul class="legend">
+        <li><span class="swatch" style="background:var(--amber)"></span><span><b>@bjj3d/attire</b> (new): the registry, gi@1 (points, chains, regions, rest lengths, drape), constraint projection, target resolution, winding number. Pure math on <code>Vec3</code>, no three.js.</span></li>
+        <li><span class="swatch"></span><span><b>three</b>: the gi mesh, driven by the points; the belt with degrees on its tail.</span></li>
+        <li><span class="swatch"></span><span><b>data</b>: <code>block.schema.json</code>, <code>ids.json</code>, the build merging blocks with GrappleMap.</span></li>
+        <li><span class="swatch"></span><span><b>editor</b>: moving chain points, untucking, adding and ending relations.</span></li>
+        <li><span class="swatch"></span><span><b>metrics</b>: collar-choke and Ezekiel readings.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 id="phases">10. Phases and open decisions</h2>
+  <ol class="phases">
+    <li><b>Blocks and ids.</b> <code>bjj3d/block@1</code> without attire, <code>ids.json</code> for GrappleMap, techniques reference ids. Nothing visible changes.</li>
+    <li><b>gi@1 visible.</b> <code>@bjj3d/attire</code> with the rest drape, drawn by <code>three</code>, belt degrees, gi as a fighter option. Every GrappleMap transition can be watched in a gi.</li>
+    <li><b>Editor.</b> Move gi points, untuck, add grips; grip and length rules in <code>validate</code>.</li>
+    <li><b>Wraps and pins.</b> The relations, the winding number, the cloth projection between keyframes.</li>
+    <li><b>First gi techniques.</b> Cross collar from closed guard, Ezekiel from mount, bow and arrow, a lapel feed.</li>
+    <li><b>Metrics.</b> Collar chokes and Ezekiel, calibrated, in <code>docs/validation.md</code>.</li>
+  </ol>
+  <div class="table-wrap" style="margin-top:16px"><table>
+    <tr><th>Open decision</th><th>Notes</th></tr>
+    <tr><td>Points per lapel</td><td>Seven covers collar, lapel and skirt grips; a worm guard wrap may want more. gi@1 is versioned, so gi@2 can add points.</td></tr>
+    <tr><td>Lapel overlap under mirror</td><td>A mirrored gi is right over left. Accept it, or store the overlap as state and keep it.</td></tr>
+    <tr><td>Body size</td><td>Rest lengths scale with the torso; whether one gi@1 fits all GrappleMap figures needs measuring.</td></tr>
+    <tr><td>Feet on cloth</td><td>Spider guard, De la Riva with a sleeve: a foot <code>grip</code>, or a <code>push</code> relation?</td></tr>
+    <tr><td>Licence of new data</td><td>GrappleMap is public domain; CC0 for contributed blocks keeps one notice.</td></tr>
+    <tr><td>Package</td><td><code>@bjj3d/attire</code>, or <code>@bjj3d/core/attire</code>.</td></tr>
+  </table></div>
+</main>
+
+<script>
+  // Timeline and belt: plain SVG, no dependencies.
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent, text) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (text !== undefined) e.textContent = text;
+    parent.appendChild(e);
+    return e;
+  };
+
+  (function timeline() {
+    const g = document.getElementById("tl");
+    const x0 = 250, w = 72, frames = 8;
+    const steps = ["closed guard, at distance", "1st hand deep in the collar", "break the posture", "2nd hand in the other collar", "elbows close", "pull the collars apart", "draw the elbows down", "finish"];
+    for (let f = 0; f < frames; f++) {
+      el("text", { x: x0 + f * w + w / 2, y: 18, "text-anchor": "middle", class: "small muted" }, g, "frame " + f);
+      el("line", { x1: x0 + f * w, y1: 26, x2: x0 + f * w, y2: 200, stroke: "var(--line)" }, g);
+    }
+    el("line", { x1: x0 + frames * w, y1: 26, x2: x0 + frames * w, y2: 200, stroke: "var(--line)" }, g);
+    const rows = [
+      { label: "grip · P1 RightHand → P0 RightLapel@0.5", sub: "fingers-in", from: 1, to: 7, color: "var(--blue)" },
+      { label: "grip · P1 LeftHand → P0 LeftLapel@0.5", sub: "thumb-in", from: 3, to: 7, color: "var(--blue)" },
+      { label: "state · P0 lapels tucked", sub: "default, nothing stored", from: 0, to: 7, color: "var(--muted)", faint: true },
+      { label: "reading · collar loop around the neck", sub: "metric, not stored", from: 4, to: 7, color: "var(--tension)", ramp: true },
+    ];
+    const defs = el("defs", {}, g);
+    const grad = el("linearGradient", { id: "ramp", x1: "0", x2: "1" }, defs);
+    el("stop", { offset: "0", "stop-color": "var(--tension)", "stop-opacity": "0.12" }, grad);
+    el("stop", { offset: "1", "stop-color": "var(--tension)", "stop-opacity": "0.85" }, grad);
+    rows.forEach((r, i) => {
+      const y = 40 + i * 40;
+      el("text", { x: 0, y: y + 13, class: "lbl" }, g, r.label);
+      el("text", { x: 0, y: y + 27, class: "small muted" }, g, r.sub);
+      el("rect", {
+        x: x0 + r.from * w + 4, y: y + 4, width: (r.to - r.from + 1) * w - 8, height: 22, rx: 6,
+        fill: r.ramp ? "url(#ramp)" : r.color, opacity: r.faint ? 0.25 : r.ramp ? 1 : 0.8,
+      }, g);
+    });
+    steps.forEach((s, f) => {
+      const words = s.split(" "), lines = [];
+      let cur = "";
+      for (const wd of words) { if ((cur + " " + wd).trim().length > 12) { lines.push(cur.trim()); cur = wd; } else cur += " " + wd; }
+      lines.push(cur.trim());
+      lines.forEach((ln, k) => el("text", { x: x0 + f * w + w / 2, y: 212 + k * 13, "text-anchor": "middle", class: "small" }, g, ln));
+    });
+  })();
+
+  const RANKS = { white: "#f2f0ea", blue: "#2457b8", purple: "#6a3a9c", brown: "#6b4226", black: "#1a1a1c", grey: "#8a8f96", yellow: "#e2c12d", orange: "#e07b22", green: "#2f8a3e" };
+  const GI = { white: "#f4f1ea", blue: "#2b4c86", black: "#25272b" };
+  window.appearance = { rank: "purple", degrees: 2, gi: "white" };
+
+  function drawBelt() {
+    const a = window.appearance;
+    const svg = document.getElementById("beltSvg");
+    svg.replaceChildren();
+    const color = RANKS[a.rank];
+    const black = a.rank === "black";
+    el("rect", { x: 10, y: 28, width: 620, height: 34, rx: 5, fill: color, stroke: "var(--line)" }, svg);
+    el("rect", { x: 440, y: 28, width: 150, height: 34, fill: black ? "#c8102e" : "#1a1a1c" }, svg);
+    for (let i = 0; i < a.degrees; i++) el("rect", { x: 566 - i * 22, y: 28, width: 10, height: 34, fill: "#ffffff" }, svg);
+    el("text", { x: 10, y: 82, class: "small muted" }, svg, a.rank + " belt · " + a.degrees + (a.degrees === 1 ? " degree" : " degrees"));
+    el("text", { x: 515, y: 20, "text-anchor": "middle", class: "small muted" }, svg, black ? "red bar" : "black bar");
+    for (const id of ["svgBelt", "svgKnot"]) document.getElementById(id).setAttribute("fill", color);
+    document.getElementById("svgTails").style.stroke = color;
+    document.getElementById("svgBeltTop").setAttribute("stroke", color);
+    window.dispatchEvent(new Event("appearance"));
+  }
+  const rank = document.getElementById("rank"), deg = document.getElementById("degrees"), degOut = document.getElementById("degOut");
+  rank.addEventListener("change", () => {
+    window.appearance.rank = rank.value;
+    deg.max = rank.value === "black" ? 6 : 4;
+    if (+deg.value > +deg.max) deg.value = deg.max;
+    window.appearance.degrees = +deg.value; degOut.textContent = deg.value;
+    drawBelt();
+  });
+  deg.addEventListener("input", () => { window.appearance.degrees = +deg.value; degOut.textContent = deg.value; drawBelt(); });
+  document.getElementById("giColor").addEventListener("change", (e) => { window.appearance.gi = e.target.value; window.dispatchEvent(new Event("appearance")); });
+  window.RANKS = RANKS; window.GI = GI;
+  drawBelt();
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+// <mannequin> Built by tools/gi-plan.mjs from packages/three; do not edit here.
+const { JOINT_BALLS, Mannequin, paint, sharedUniforms } = (() => {
+const THREE2 = THREE;
+const THREE3 = THREE;
+// packages/three/src/mannequin.ts
+
+// packages/three/src/loft.ts
+function basis(along, across) {
+  const y = along.clone().normalize();
+  const x = across.clone().addScaledVector(y, -across.dot(y));
+  if (x.lengthSq() < 1e-8) {
+    const ref = Math.abs(y.x) < 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+    x.copy(ref).addScaledVector(y, -ref.dot(y));
+  }
+  x.normalize();
+  const z = new THREE.Vector3().crossVectors(x, y);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+}
+function track(points) {
+  const p = [...points].sort((a, b) => a[0] - b[0]);
+  if (p.length === 1) return () => p[0][1];
+  const n = p.length, d = [];
+  for (let i = 0; i < n - 1; i++) d.push((p[i + 1][1] - p[i][1]) / (p[i + 1][0] - p[i][0]));
+  const m = p.map((_, i) => i === 0 ? d[0] : i === n - 1 ? d[n - 2] : d[i - 1] * d[i] > 0 ? 2 / (1 / d[i - 1] + 1 / d[i]) : 0);
+  return (u) => {
+    if (u <= p[0][0]) return p[0][1];
+    if (u >= p[n - 1][0]) return p[n - 1][1];
+    let i = 0;
+    while (u > p[i + 1][0]) i++;
+    const h = p[i + 1][0] - p[i][0], t = (u - p[i][0]) / h, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * p[i][1] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * p[i + 1][1] + (t3 - t2) * h * m[i + 1];
+  };
+}
+function domes(t, lo, hi) {
+  let k = 1;
+  if (lo > 0 && t < lo) k *= Math.sqrt(1 - ((lo - t) / lo) ** 2);
+  if (hi > 0 && t > 1 - hi) k *= Math.sqrt(Math.max(0, 1 - ((t - (1 - hi)) / hi) ** 2));
+  return k;
+}
+function loft(y0, y1, shape, rings = 48, radial = 40) {
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= rings; i++) {
+    const t = i / rings, u = y0 + (y1 - y0) * t, { a, b, zc, n } = shape(u, t), e = 2 / n;
+    for (let j = 0; j <= radial; j++) {
+      const th = j / radial * Math.PI * 2, c = Math.cos(th), s = Math.sin(th);
+      pos.push(a * Math.sign(c) * Math.abs(c) ** e, u, zc + b * Math.sign(s) * Math.abs(s) ** e);
+      uv.push(j / radial, t);
+    }
+  }
+  for (let i = 0; i < rings; i++) for (let j = 0; j < radial; j++) {
+    const p = i * (radial + 1) + j, q = p + radial + 1;
+    idx.push(p, q, p + 1, p + 1, q, q + 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+function piece(y0, y1, { a, b, zc = [[0, 0]], n = 2, lo, hi }, rings, radial) {
+  const A = track(a), B = track(b), Z = track(zc);
+  return loft(y0, y1, (u, t) => {
+    const k = domes(t, lo, hi);
+    return { a: A(u) * k, b: B(u) * k, zc: Z(u), n };
+  }, rings, radial);
+}
+
+// packages/three/src/mannequin.ts
+var BELT_COLORS = { white: "#f2f0ea", blue: "#2457b8", purple: "#6a3a9c", brown: "#6b4226", black: "#1a1a1c" };
+var SIDES = ["Left", "Right"];
+var JOINT_BALLS = {
+  Shoulder: 0.054,
+  Elbow: 0.041,
+  Wrist: 0.026,
+  Hip: 0.07,
+  Knee: 0.053,
+  Ankle: 0.032
+};
+var HEAD_LEAN = Math.atan2(0.045, 0.16);
+var FINGERS = [[0.088, 0.03], [0.096, 0.01], [0.09, -0.01], [0.072, -0.029]];
+var CORE_REACH = 0.035;
+var BELT_AT = 0.3;
+var KNOT_AHEAD = 0.121 - 0.012 + 0.01;
+var GEO = {
+  // Along MidHip → Core.
+  pelvis: piece(-0.17, 0.72, {
+    a: [[-0.17, 4e-3], [-0.12, 0.03], [0, 0.075], [0.1, 0.12], [0.25, 0.152], [0.42, 0.158], [0.6, 0.152], [0.72, 0.146]],
+    b: [[-0.17, 0.03], [0, 0.07], [0.15, 0.1], [0.3, 0.112], [0.45, 0.116], [0.72, 0.112]],
+    zc: [[-0.17, 4e-3], [0, 0], [0.3, -0.012], [0.5, -8e-3], [0.72, -4e-3]],
+    n: 2.4,
+    lo: 0.06,
+    hi: 0.1
+  }),
+  // Along Core → Neck. The abdomen reaches a little into the pelvis and the chest, so the seams
+  // are lines, not gaps.
+  abdomen: piece(-0.25, 0.19, { a: [[-0.25, 0.12], [-0.19, 0.124], [0, 0.127], [0.19, 0.13]], b: [[-0.25, 0.102], [-0.19, 0.106], [0, 0.11], [0.19, 0.108]], zc: [[0, 4e-3]], n: 2.3, lo: 0.08, hi: 0.08 }),
+  chest: piece(0.13, 1.05, {
+    a: [[0.13, 0.132], [0.19, 0.136], [0.275, 0.145], [0.356, 0.154], [0.436, 0.162], [0.517, 0.169], [0.6, 0.174], [0.75, 0.176], [0.92, 0.175], [1, 0.17], [1.05, 0.15]],
+    b: [[0.13, 0.104], [0.19, 0.115], [0.31, 0.128], [0.43, 0.137], [0.55, 0.138], [0.67, 0.133], [0.79, 0.118], [0.91, 0.096], [1.05, 0.07]],
+    zc: [[0.13, 0], [0.4, 0.01], [0.55, 6e-3], [0.7, -8e-3], [0.9, -0.012], [1.05, -0.01]],
+    n: 3,
+    lo: 0.06,
+    hi: 0.1
+  }),
+  // Along Neck → Head; mostly under the head, as on the reference.
+  neck: piece(-0.1, 0.55, { a: [[0, 0.066], [0.55, 0.06]], b: [[0, 0.062], [0.55, 0.058]], lo: 0.05, hi: 0.1 }),
+  // Absolute metres from the head's widest section, along Neck → Head.
+  head: (() => {
+    const g = piece(-0.153, 0.141, {
+      a: [[0.141, 0], [0.124, 0.053], [0.109, 0.07], [0.094, 0.081], [0.078, 0.088], [0.062, 0.093], [0.047, 0.095], [0.016, 0.096], [-0.016, 0.093], [-0.047, 0.088], [-0.078, 0.081], [-0.109, 0.071], [-0.125, 0.063], [-0.14, 0.05], [-0.153, 4e-3]],
+      b: [[0.141, 0], [0.123, 0.055], [0.108, 0.075], [0.092, 0.089], [0.077, 0.099], [0.061, 0.106], [0.046, 0.112], [0.031, 0.115], [0, 0.118], [-0.031, 0.114], [-0.061, 0.107], [-0.077, 0.101], [-0.092, 0.089], [-0.108, 0.078], [-0.13, 0.058], [-0.153, 4e-3]],
+      zc: [[0.141, -0.012], [0.123, -0.011], [0.1, -6e-3], [0, 0], [-0.046, 8e-3], [-0.077, 0.014], [-0.092, 0.024], [-0.108, 0.034], [-0.13, 0.045], [-0.153, 0.05]],
+      lo: 0,
+      hi: 0
+    }, 72, 48);
+    g.translate(0, 0, -0.025);
+    g.rotateX(-HEAD_LEAN);
+    return g;
+  })(),
+  // Along Shoulder → Elbow; local z is up, a the front-to-back half width (from the top view),
+  // b the up-and-down one (from the front view). The deltoid sits inside the chest's side.
+  upperArm: piece(-0.12, 0.97, {
+    a: [[-0.12, 0.05], [-0.04, 0.068], [0.13, 0.076], [0.27, 0.077], [0.4, 0.066], [0.53, 0.053], [0.67, 0.049], [0.8, 0.048], [0.93, 0.046], [0.97, 0.044]],
+    b: [[-0.12, 0.045], [-0.04, 0.058], [0.08, 0.063], [0.2, 0.069], [0.32, 0.068], [0.37, 0.064], [0.43, 0.058], [0.49, 0.053], [0.55, 0.05], [0.66, 0.048], [0.78, 0.047], [0.9, 0.045], [0.97, 0.042]],
+    lo: 0.1,
+    hi: 0.04
+  }),
+  foreArm: piece(0.04, 0.97, {
+    a: [[0.04, 0.046], [0.07, 0.049], [0.22, 0.05], [0.37, 0.047], [0.52, 0.042], [0.67, 0.037], [0.83, 0.031], [0.91, 0.029], [0.97, 0.027]],
+    b: [[0.04, 0.044], [0.07, 0.047], [0.22, 0.048], [0.37, 0.045], [0.52, 0.04], [0.67, 0.035], [0.83, 0.03], [0.91, 0.028], [0.97, 0.026]],
+    lo: 0.06,
+    hi: 0.04
+  }),
+  // Along Hip → Knee and Knee → Ankle; local z forward.
+  thigh: piece(-0.08, 0.93, {
+    a: [[-0.08, 0.06], [0, 0.072], [0.077, 0.075], [0.24, 0.079], [0.4, 0.073], [0.55, 0.066], [0.71, 0.059], [0.84, 0.054], [0.93, 0.052]],
+    b: [[-0.08, 0.065], [0.05, 0.087], [0.25, 0.085], [0.44, 0.08], [0.64, 0.071], [0.84, 0.06], [0.93, 0.057]],
+    zc: [[0, 0], [0.5, 3e-3], [0.93, 4e-3]],
+    lo: 0.12,
+    hi: 0.05
+  }),
+  shin: piece(0.07, 0.95, {
+    a: [[0.07, 0.06], [0.125, 0.061], [0.29, 0.059], [0.54, 0.05], [0.63, 0.042], [0.79, 0.038], [0.92, 0.037], [0.95, 0.034]],
+    b: [[0.07, 0.062], [0.125, 0.065], [0.29, 0.063], [0.54, 0.056], [0.63, 0.048], [0.79, 0.041], [0.92, 0.038], [0.95, 0.035]],
+    zc: [[0.07, 0], [0.3, -4e-3], [0.6, -6e-3], [0.95, -6e-3]],
+    lo: 0.05,
+    hi: 0.06
+  }),
+  // Absolute metres from Heel along heel → toe, at a standard 23 cm; local z is down, the sole
+  // 3 cm under the joints. The reference's ankle sits twice as high as GrappleMap's, so the foot
+  // keeps its outline at about half the height.
+  foot: (() => {
+    const H = track([[-0.035, 0.078], [0, 0.092], [0.05, 0.094], [0.1, 0.085], [0.15, 0.072], [0.2, 0.064], [0.24, 0.06], [0.27, 0.056]]);
+    const A = track([[-0.035, 0.04], [0, 0.047], [0.07, 0.053], [0.14, 0.062], [0.2, 0.066], [0.245, 0.063], [0.27, 0.056]]);
+    return loft(-0.035, 0.272, (u, t) => {
+      const k = domes(t, 0.12, 0.16), h = H(u);
+      return { a: A(u) * k, b: h / 2 * k, zc: 0.03 - h / 2, n: 2.4 };
+    }, 56, 44);
+  })(),
+  // Along Wrist → Hand; local z is the back of the hand.
+  palm: piece(-0.04, 1.04, { a: [[-0.04, 0.032], [0.2, 0.038], [0.7, 0.044], [1.04, 0.044]], b: [[-0.04, 0.014], [0.5, 0.0145], [1.04, 0.012]], n: 2.6, lo: 0.15, hi: 0.08 }),
+  // Absolute metres from Hand.
+  fingers: FINGERS.map(([len]) => piece(4e-3, len, { a: [[0, 95e-4], [len, 85e-4]], b: [[0, 92e-4], [len, 8e-3]], lo: 0.05, hi: 0.22 }, 24, 24)),
+  thumbBase: piece(-4e-3, 0.046, { a: [[0, 0.0145], [0.046, 0.0125]], b: [[0, 0.0135], [0.046, 0.012]], lo: 0.15, hi: 0.12 }, 20, 24),
+  thumbTip: piece(2e-3, 0.036, { a: [[0, 0.0122], [0.036, 98e-4]], b: [[0, 0.0115], [0.036, 9e-3]], lo: 0.08, hi: 0.32 }, 20, 24),
+  // The belt: a band round the pelvis at BELT_AT, and its knot in front. Absolute metres.
+  belt: piece(-0.0225, 0.0225, { a: [[0, 0.161]], b: [[0, 0.121]], zc: [[0, -0.012]], n: 2.4, lo: 0.15, hi: 0.15 }, 6, 64),
+  knot: piece(-0.028, 0.028, { a: [[0, 0.032]], b: [[0, 0.014]], n: 3, lo: 0.25, hi: 0.25 }, 12, 24),
+  ball: new THREE2.SphereGeometry(1, 40, 28),
+  pin: new THREE2.CylinderGeometry(1, 1, 1, 28),
+  seam: new THREE2.CylinderGeometry(1, 1, 1, 40)
+};
+var Mannequin = class {
+  group = new THREE2.Group();
+  /** Every piece by name, as placed on the last pose. */
+  pieces = {};
+  /** The hands as last placed: the fingers' and the thumb's folds, and the hand's frame. */
+  hands = {};
+  /** Thickness, 1 for the standard body. */
+  build = 1;
+  body = [];
+  joints = [];
+  belts = [];
+  constructor() {
+    const mesh = (name, geo, kind) => {
+      const m = new THREE2.Mesh(geo);
+      m.name = name;
+      m.castShadow = m.receiveShadow = true;
+      this.group.add(m);
+      this.pieces[name] = m;
+      kind.push(m);
+      return m;
+    };
+    for (const k of ["pelvis", "abdomen", "chest", "neck", "head"]) mesh(k, GEO[k], this.body);
+    for (const s of SIDES) {
+      for (const k of ["upperArm", "foreArm", "thigh", "shin", "foot", "palm", "thumbBase", "thumbTip"]) mesh(s + k[0].toUpperCase() + k.slice(1), GEO[k], this.body);
+      GEO.fingers.forEach((g, i) => mesh(`${s}Finger${i}`, g, this.body));
+    }
+    for (const s of SIDES) {
+      for (const j of Object.keys(JOINT_BALLS)) mesh(`${s}${j}Ball`, GEO.ball, this.joints);
+      mesh(`${s}ThumbBall`, GEO.ball, this.joints);
+      mesh(`${s}ThumbBaseBall`, GEO.ball, this.joints);
+      mesh(`${s}Knuckles`, GEO.pin, this.joints);
+      mesh(`${s}WristSeam`, GEO.seam, this.joints);
+      mesh(`${s}AnkleSeam`, GEO.seam, this.joints);
+    }
+    mesh("NeckBall", GEO.ball, this.joints);
+    mesh("NeckSeam", GEO.seam, this.joints);
+    mesh("Waist", GEO.ball, this.joints);
+    mesh("belt", GEO.belt, this.belts);
+    mesh("knot", GEO.knot, this.belts);
+  }
+  paint(p) {
+    for (const m of this.body) m.material = p.body;
+    for (const m of this.joints) m.material = p.joint;
+    for (const m of this.belts) m.material = p.belt;
+  }
+  set shadows(on) {
+    for (const m of this.group.children) m.castShadow = m.receiveShadow = on;
+  }
+  /** Places every piece from this frame's joints. */
+  pose(l) {
+    const k = this.build, M = this.pieces;
+    const P = (j) => l[j];
+    const place = (m, from, to, across, scaled = true) => {
+      const d = new THREE2.Vector3().subVectors(to, from);
+      m.position.copy(from);
+      m.quaternion.copy(basis(d, across));
+      m.scale.set(scaled ? k : 1, scaled ? d.length() : 1, scaled ? k : 1);
+    };
+    const along = (m, from, dir, len, across) => {
+      m.position.copy(from);
+      m.quaternion.copy(basis(dir, across));
+      m.scale.set(k, len, k);
+    };
+    const ball = (m, at, r) => {
+      m.position.copy(at);
+      m.quaternion.identity();
+      m.scale.setScalar(r);
+    };
+    const seam = (m, at, axis, r, h) => {
+      m.position.copy(at);
+      m.quaternion.copy(basis(axis, new THREE2.Vector3(1, 0, 0)));
+      m.scale.set(r * k, h, r * k);
+    };
+    const spine = new THREE2.Vector3().subVectors(l.Neck, l.MidHip).normalize();
+    const onLine = l.MidHip.clone().addScaledVector(spine, new THREE2.Vector3().subVectors(l.Core, l.MidHip).dot(spine));
+    const offLine = new THREE2.Vector3().subVectors(l.Core, onLine);
+    if (offLine.length() > CORE_REACH) offLine.setLength(CORE_REACH);
+    const core = onLine.add(offLine);
+    const toLeftHip = new THREE2.Vector3().subVectors(l.LeftHip, l.RightHip), toLeft = new THREE2.Vector3().subVectors(l.LeftShoulder, l.RightShoulder);
+    const up = new THREE2.Vector3().subVectors(l.Neck, core);
+    const forward = new THREE2.Vector3().crossVectors(toLeft, up).normalize();
+    const lowDir = new THREE2.Vector3().subVectors(core, l.MidHip).normalize().add(spine).normalize();
+    const midDir = new THREE2.Vector3().subVectors(l.Neck, core).normalize().add(spine).normalize();
+    const lowLen = l.MidHip.distanceTo(core), midLen = core.distanceTo(l.Neck);
+    along(M.pelvis, l.MidHip, lowDir, lowLen, toLeftHip);
+    along(M.abdomen, core, midDir, midLen, toLeft.clone().lerp(toLeftHip, 0.5));
+    const pelvisTop = l.MidHip.clone().addScaledVector(lowDir, 0.72 * lowLen), abdomenBottom = core.clone().addScaledVector(midDir, -0.25 * midLen);
+    M.Waist.position.copy(pelvisTop).add(abdomenBottom).multiplyScalar(0.5);
+    M.Waist.quaternion.copy(basis(lowDir.clone().add(midDir), toLeftHip));
+    M.Waist.scale.set(0.12 * k, Math.max(0.04, pelvisTop.distanceTo(abdomenBottom) / 2 + 0.03), 0.1 * k);
+    place(M.chest, core, l.Neck, toLeft);
+    const beltAt = l.MidHip.clone().addScaledVector(lowDir, BELT_AT * lowLen);
+    const beltFrame = basis(lowDir, toLeftHip);
+    M.belt.position.copy(beltAt);
+    M.belt.quaternion.copy(beltFrame);
+    M.belt.scale.set(k, 1, k);
+    M.knot.position.copy(beltAt).add(new THREE2.Vector3(0, 0, KNOT_AHEAD * k).applyQuaternion(beltFrame));
+    M.knot.quaternion.copy(beltFrame);
+    M.knot.scale.set(k, 1, k);
+    place(M.neck, l.Neck, l.Head, toLeft);
+    const headDir = new THREE2.Vector3().subVectors(l.Head, l.Neck).normalize();
+    M.head.position.copy(l.Head).addScaledVector(headDir, 0.027);
+    M.head.quaternion.copy(basis(headDir, toLeft));
+    M.head.scale.setScalar(1);
+    seam(M.NeckSeam, l.Neck.clone().addScaledVector(headDir, 6e-3), headDir, 0.067, 8e-3);
+    ball(M.NeckBall, l.Neck.clone().addScaledVector(headDir, 0.03), 0.058 * k);
+    for (const s of SIDES) {
+      const J = (j) => P(s + j), sign = s === "Left" ? 1 : -1;
+      place(M[s + "UpperArm"], J("Shoulder"), J("Elbow"), forward.clone().multiplyScalar(sign));
+      place(M[s + "ForeArm"], J("Elbow"), J("Wrist"), forward.clone().multiplyScalar(sign));
+      place(M[s + "Thigh"], J("Hip"), J("Knee"), toLeftHip.clone().negate());
+      place(M[s + "Shin"], J("Knee"), J("Ankle"), toLeftHip.clone().negate());
+      for (const [j, r] of Object.entries(JOINT_BALLS)) ball(M[`${s}${j}Ball`], J(j), r * k);
+      seam(M[s + "AnkleSeam"], J("Ankle"), new THREE2.Vector3().subVectors(J("Ankle"), J("Knee")), 0.031, 0.012);
+      const heel = J("Heel"), toe = J("Toe"), fd = new THREE2.Vector3().subVectors(toe, heel);
+      const footUp = new THREE2.Vector3().subVectors(J("Ankle"), heel.clone().add(toe).multiplyScalar(0.5));
+      const foot = M[s + "Foot"];
+      foot.position.copy(heel);
+      foot.quaternion.copy(basis(fd, new THREE2.Vector3().crossVectors(footUp, fd)));
+      foot.scale.set(k, fd.length() / 0.23, k);
+      const w = J("Wrist"), h = J("Hand"), f = J("Fingers");
+      const d1 = new THREE2.Vector3().subVectors(h, w).normalize(), d2 = new THREE2.Vector3().subVectors(f, h).normalize();
+      const fold = Math.acos(Math.min(1, Math.max(-1, d1.dot(d2))));
+      let palmN = d2.clone().addScaledVector(d1, -d2.dot(d1));
+      if (palmN.length() < 0.05) palmN = up.clone().negate().addScaledVector(d1, up.dot(d1));
+      if (palmN.lengthSq() < 1e-8) palmN = forward.clone();
+      palmN.normalize();
+      const lateral = new THREE2.Vector3().crossVectors(d1, palmN).normalize();
+      const thumbSide = lateral.clone().multiplyScalar(-sign);
+      place(M[s + "Palm"], w, h, lateral.clone().negate());
+      const across = new THREE2.Vector3().crossVectors(d2, palmN).normalize().negate();
+      FINGERS.forEach(([, side], i) => {
+        const at = h.clone().addScaledVector(thumbSide, side).addScaledVector(d1, i === 3 ? -6e-3 : 0);
+        place(M[`${s}Finger${i}`], at, at.clone().add(d2), across, false);
+      });
+      seam(M[s + "WristSeam"], w, new THREE2.Vector3().subVectors(w, J("Elbow")), 0.027, 0.01);
+      M[s + "Knuckles"].position.copy(h);
+      M[s + "Knuckles"].quaternion.copy(basis(lateral, d1));
+      M[s + "Knuckles"].scale.set(0.0108, 0.072, 0.0108);
+      const tFold = Math.min(1.35, 0.15 + fold * 0.9);
+      const base = w.clone().addScaledVector(d1, 0.022).addScaledVector(thumbSide, 0.03).addScaledVector(palmN, 5e-3);
+      const t1 = d1.clone().multiplyScalar(0.8).addScaledVector(thumbSide, 0.55).addScaledVector(palmN, 0.1 + fold * 0.3).normalize();
+      const mid = base.clone().addScaledVector(t1, 0.046);
+      const toPalm = palmN.clone().addScaledVector(t1, -palmN.dot(t1)).normalize();
+      const t2 = t1.clone().multiplyScalar(Math.cos(tFold)).addScaledVector(toPalm, Math.sin(tFold));
+      place(M[s + "ThumbBase"], base, base.clone().add(t1), palmN.clone().negate(), false);
+      place(M[s + "ThumbTip"], mid, mid.clone().add(t2), palmN.clone().negate(), false);
+      ball(M[s + "ThumbBaseBall"], base, 0.0142);
+      ball(M[s + "ThumbBall"], mid, 0.0118);
+      this.hands[s] = { fingers: fold, thumb: tFold, palm: w.clone().add(h).multiplyScalar(0.5), palmNormal: palmN, thumbSide };
+    }
+  }
+};
+
+// packages/three/src/materials.ts
+var LOOKS = ["solid", "wood", "hologram"];
+var TENSION_COLOR = new THREE3.Color("#ff3355");
+function sharedUniforms() {
+  return {
+    tension: { value: 0 },
+    tensionCenter: { value: new THREE3.Vector3() },
+    tensionRadius: { value: 0.14 },
+    tensionColor: { value: TENSION_COLOR.clone() },
+    intensity: { value: 1 },
+    onLight: { value: 0 }
+  };
+}
+var GLOW = (
+  /* glsl */
+  `
+  uniform float tension;
+  uniform vec3 tensionCenter;
+  uniform float tensionRadius;
+  uniform vec3 tensionColor;
+  uniform float intensity;
+  uniform float onLight;
+  varying vec3 vPosW;
+  float tensionAt() { return tension * (1.0 - smoothstep(0.0, tensionRadius, distance(vPosW, tensionCenter))); }
+`
+);
+var hologramVertex = (
+  /* glsl */
+  `
+  varying vec3 vNormalW;
+  varying vec3 vPosW;
+  void main() {
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    vPosW = world.xyz;
+    vNormalW = normalize(mat3(modelMatrix) * normal);
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`
+);
+var hologramFragment = (
+  /* glsl */
+  `
+  uniform vec3 color;
+  varying vec3 vNormalW;
+  ${GLOW}
+  void main() {
+    vec3 v = normalize(cameraPosition - vPosW);
+    float rim = pow(1.0 - abs(dot(normalize(vNormalW), v)), 2.6);
+    float g = tensionAt();
+    if (onLight > 0.5) {
+      vec3 tint = mix(color * 0.45, tensionColor, g);
+      gl_FragColor = vec4(tint, clamp(0.06 + 0.85 * rim + g, 0.0, 1.0) * intensity);
+      return;
+    }
+    vec3 c = color * (0.035 + 0.55 * rim);
+    c = mix(c, tensionColor * (0.3 + rim), g) + tensionColor * g * 0.2;
+    gl_FragColor = vec4(c * intensity, 1.0);
+  }
+`
+);
+function hologram(color, u, onLight) {
+  return new THREE3.ShaderMaterial({
+    vertexShader: hologramVertex,
+    fragmentShader: hologramFragment,
+    uniforms: { ...u, color: { value: new THREE3.Color(color) } },
+    transparent: true,
+    depthWrite: false,
+    blending: onLight ? THREE3.NormalBlending : THREE3.AdditiveBlending,
+    side: THREE3.DoubleSide
+  });
+}
+function lit(params, u) {
+  const m = new THREE3.MeshStandardMaterial(params);
+  m.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, u);
+    shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vPosW;").replace("#include <project_vertex>", "#include <project_vertex>\nvPosW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\n" + GLOW).replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, tensionColor, 0.75 * tensionAt());").replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += tensionColor * 0.9 * tensionAt();").replace("#include <opaque_fragment>", "#include <opaque_fragment>\ngl_FragColor.rgb *= intensity;");
+  };
+  return m;
+}
+var woodGrain = null;
+function grain() {
+  if (woodGrain) return woodGrain;
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 512;
+  const g = c.getContext("2d");
+  g.fillStyle = "#d2ad84";
+  g.fillRect(0, 0, c.width, c.height);
+  for (let y = 0; y < c.height; y += 3) {
+    const shade = 0.06 + 0.06 * Math.sin(y * 0.11) + 0.04 * Math.sin(y * 0.37);
+    g.fillStyle = `rgb(110 70 35 / ${shade.toFixed(3)})`;
+    g.fillRect(0, y, c.width, 2);
+  }
+  woodGrain = new THREE3.CanvasTexture(c);
+  woodGrain.colorSpace = THREE3.SRGBColorSpace;
+  woodGrain.wrapS = woodGrain.wrapT = THREE3.RepeatWrapping;
+  return woodGrain;
+}
+function paint(look, color, u, belt, onLight) {
+  return paintWith(look, color, u, BELT_COLORS[belt], onLight);
+}
+var builtinLooks = LOOKS.map((id) => ({
+  id,
+  paint: (color, u, beltColor, onLight) => paintWith(id, color, u, beltColor, onLight),
+  shadows: id !== "hologram"
+}));
+function paintWith(look, color, u, beltColor, onLight) {
+  if (look === "hologram") {
+    const h = hologram(color, u, onLight);
+    return { body: h, joint: h, belt: h };
+  }
+  const c = new THREE3.Color(color);
+  const beltMat = lit({ color: beltColor, roughness: 0.85 }, u);
+  if (look === "wood") return { body: lit({ map: grain(), roughness: 0.55 }, u), joint: lit({ color: c, roughness: 0.45 }, u), belt: beltMat };
+  return { body: lit({ color: c, roughness: 0.6 }, u), joint: lit({ color: c.clone().multiplyScalar(0.6), roughness: 0.5 }, u), belt: beltMat };
+}
+return { JOINT_BALLS, Mannequin, paint, sharedUniforms };
+})();
+// </mannequin>
+
+// <core> decoding, drape and constraint projection; kept free of rendering so it can be tested on its own.
+const DIGITS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const JOINTS = [
+  "LeftToe", "RightToe", "LeftHeel", "RightHeel", "LeftAnkle", "RightAnkle",
+  "LeftKnee", "RightKnee", "LeftHip", "RightHip", "LeftShoulder", "RightShoulder",
+  "LeftElbow", "RightElbow", "LeftWrist", "RightWrist", "LeftHand", "RightHand",
+  "LeftFingers", "RightFingers", "Core", "Neck", "Head",
+];
+const CLOTH = 0.012; // how far cloth sits off the body
+const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (t) => t * t * (3 - 2 * t);
+const clamp01 = (t) => Math.min(1, Math.max(0, t));
+
+function decode(s) {
+  let i = 0;
+  const d = (c) => DIGITS.indexOf(c);
+  const next = () => (d(s[i++]) * 62 + d(s[i++])) / 1000;
+  return [0, 1].map(() => {
+    const p = {};
+    for (const j of JOINTS) { const x = next() - 2, y = next(), z = next() - 2; p[j] = V(x, y, z); }
+    p.MidHip = p.LeftHip.clone().add(p.RightHip).multiplyScalar(0.5);
+    return p;
+  });
+}
+
+function encodePoints(list) {
+  let out = "";
+  const put = (x) => { const v = Math.min(3843, Math.max(0, Math.round(x * 1000))); out += DIGITS[Math.floor(v / 62)] + DIGITS[v % 62]; };
+  for (const v of list) { put(v.x + 2); put(v.y); put(v.z + 2); }
+  return out;
+}
+
+// The body is the site's wooden mannequin (packages/three/src/mannequin.ts), as the cloth sees
+// it: each placed piece a solid read back from its own geometry, a lofted piece by its rings, a
+// ball or a seam as the ellipsoid of its box. The gi keeps out of exactly what is drawn.
+const FIGURE = new Mannequin(); // posed for each player in turn, to read the solids from
+const SKIP = new Set(["belt", "knot"]); // the mannequin's own belt: the gi brings one
+const SECTIONS = new WeakMap();
+
+/** A lofted piece's rings, from its geometry: height y, half widths a and b, offset zc, squareness n. Null if not a loft. */
+function sections(geo) {
+  if (SECTIONS.has(geo)) return SECTIONS.get(geo);
+  const p = geo.attributes.position;
+  let cols = 1, t = null;
+  while (cols < p.count && p.getY(cols) === p.getY(0)) cols++;
+  const rings = p.count / cols;
+  if (geo.type === "BufferGeometry" && cols > 8 && Number.isInteger(rings) && rings > 2) {
+    t = { y: [], a: [], b: [], zc: [], n: 2, dy: 0 };
+    for (let i = 0; i < rings; i++) {
+      let a = 0, lo = Infinity, hi = -Infinity;
+      for (let j = 0; j < cols; j++) {
+        const k = i * cols + j;
+        a = Math.max(a, Math.abs(p.getX(k)));
+        lo = Math.min(lo, p.getZ(k));
+        hi = Math.max(hi, p.getZ(k));
+      }
+      t.y.push(p.getY(i * cols)); t.a.push(a); t.b.push((hi - lo) / 2); t.zc.push((hi + lo) / 2);
+    }
+    t.dy = (t.y[rings - 1] - t.y[0]) / (rings - 1);
+    // Rings at even heights, or the piece was turned after lofting (the head) and is no loft.
+    if (t.y.every((y, i) => Math.abs(y - t.y[0] - i * t.dy) < 1e-5)) {
+      // Squareness from the middle ring's point nearest 45°, where x = a·cos(θ)^(2/n).
+      const mid = rings >> 1, j = Math.round((cols - 1) / 8), th = (j / (cols - 1)) * Math.PI * 2;
+      const r = Math.abs(p.getX(mid * cols + j)) / t.a[mid];
+      if (r > 0 && r < 1) t.n = Math.max(2, (2 * Math.log(Math.cos(th))) / Math.log(r));
+    } else t = null;
+  }
+  SECTIONS.set(geo, t);
+  return t;
+}
+
+/** A loft's ring at height y, held at its ends: [a, b, zc]. */
+function sectionAt(t, y) {
+  const f = Math.min(t.y.length - 1, Math.max(0, (y - t.y[0]) / t.dy)), i = Math.min(t.y.length - 2, Math.floor(f)), w = f - i;
+  return [lerp(t.a[i], t.a[i + 1], w), lerp(t.b[i], t.b[i + 1], w), lerp(t.zc[i], t.zc[i + 1], w)];
+}
+
+/** One placed piece as a solid: where it is (matrix, inverse, rotation, scale), its rings, its box and a bounding sphere. */
+function solid(mesh) {
+  const geo = mesh.geometry;
+  if (!geo.boundingBox) geo.computeBoundingBox();
+  if (!geo.boundingSphere) geo.computeBoundingSphere();
+  const m = mesh.matrixWorld.clone(), q = new THREE.Quaternion(), sc = V();
+  m.decompose(V(), q, sc);
+  return {
+    name: mesh.name, m, inv: m.clone().invert(), q, s: sc, t: sections(geo),
+    c: geo.boundingBox.getCenter(V()), h: geo.boundingBox.getSize(V()).multiplyScalar(0.5),
+    at: geo.boundingSphere.center.clone().applyMatrix4(m), r: geo.boundingSphere.radius * Math.max(sc.x, sc.y, sc.z),
+  };
+}
+
+const L = V(), Wq = V();
+/** Moves q out of solid s to `margin` off its surface, across the piece; returns how far it moved. */
+function push(q, s, margin) {
+  const reach = s.r + margin;
+  if (q.distanceToSquared(s.at) > reach * reach) return 0;
+  L.copy(q).applyMatrix4(s.inv);
+  const t = s.t;
+  if (t) {
+    const last = t.y.length - 1, f = (L.y - t.y[0]) / t.dy;
+    if (f < 0 || f > last) return 0;
+    const i = Math.min(last - 1, Math.floor(f)), w = f - i;
+    const A = lerp(t.a[i], t.a[i + 1], w) + margin / s.s.x, B = lerp(t.b[i], t.b[i + 1], w) + margin / s.s.z, zc = lerp(t.zc[i], t.zc[i + 1], w);
+    const x = L.x, z = L.z - zc, F = Math.abs(x / A) ** t.n + Math.abs(z / B) ** t.n;
+    if (F >= 1) return 0;
+    if (F < 1e-12) L.x = A;
+    else { const g = F ** (-1 / t.n); L.x = x * g; L.z = zc + z * g; }
+  } else {
+    const hx = s.h.x + margin / s.s.x, hy = s.h.y + margin / s.s.y, hz = s.h.z + margin / s.s.z;
+    const x = (L.x - s.c.x) / hx, y = (L.y - s.c.y) / hy, z = (L.z - s.c.z) / hz, F = x * x + y * y + z * z;
+    if (F >= 1) return 0;
+    if (F < 1e-12) L.y = s.c.y + hy;
+    else { const g = 1 / Math.sqrt(F); L.set(s.c.x + x * g * hx, s.c.y + y * g * hy, s.c.z + z * g * hz); }
+  }
+  Wq.copy(L).applyMatrix4(s.m);
+  const d = Wq.distanceTo(q);
+  q.copy(Wq);
+  return d;
+}
+
+const BODIES = new WeakMap();
+const sided = (...names) => ["Left", "Right"].flatMap((s) => names.map((n) => s + n));
+/** A player's mannequin, posed, as solids: all of them by name, and grouped by what each piece of cloth keeps out of. */
+function body(p) {
+  if (BODIES.has(p)) return BODIES.get(p);
+  FIGURE.pose(p);
+  FIGURE.group.updateMatrixWorld(true);
+  const by = {};
+  for (const [name, mesh] of Object.entries(FIGURE.pieces)) if (!SKIP.has(name)) by[name] = solid(mesh);
+  const pick = (names) => names.map((n) => by[n]);
+  const b = {
+    by,
+    upper: pick(["chest", "abdomen", "Waist", "neck", "NeckBall", ...sided("ShoulderBall")]),
+    lower: pick(["pelvis", ...sided("HipBall", "Thigh")]),
+    head: pick(["head", "neck", "NeckBall"]),
+    forearms: pick(sided("ForeArm", "WristBall", "Palm")),
+    arm: (s) => pick([s + "ShoulderBall", s + "UpperArm", s + "ElbowBall", s + "ForeArm"]),
+    leg: (s) => pick([s + "HipBall", s + "Thigh", s + "KneeBall", s + "Shin"]),
+    all: Object.values(by),
+  };
+  BODIES.set(p, b);
+  return b;
+}
+
+/** The torso's frame: W at the belt, U up the spine, R to the wearer's right, F forward. */
+function torso(p) {
+  const W = p.MidHip.clone().lerp(p.Core, 0.3);
+  const U = p.Neck.clone().sub(W).normalize();
+  const lat = p.RightShoulder.clone().sub(p.LeftShoulder).add(p.RightHip.clone().sub(p.LeftHip));
+  const R = lat.addScaledVector(U, -lat.dot(U)).normalize();
+  const F = V().crossVectors(U, R).normalize();
+  return { W, U, R, F, T: p.Neck.distanceTo(W), hipHalf: p.LeftHip.distanceTo(p.RightHip) / 2 };
+}
+const at = (f, o, x, y, z) => o.clone().addScaledVector(f.R, x).addScaledVector(f.U, y).addScaledVector(f.F, z);
+
+/**
+ * The torso's frame along the spine, MidHip → Core → Neck, the line the jacket is laid along,
+ * so the jacket bends with the back. s is the height above the belt as a fraction of T
+ * (0 at the belt, 1 at the neck, negative below the belt).
+ */
+function spine(p, b = torso(p)) {
+  const curve = new THREE.CatmullRomCurve3([p.MidHip, p.Core, p.Neck], false, "centripetal");
+  const pts = Array.from({ length: 65 }, (_, i) => curve.getPoint(i / 64));
+  const hs = pts.map((q) => q.clone().sub(b.W).dot(b.U) / b.T);
+  const hipLat = p.RightHip.clone().sub(p.LeftHip).normalize(), shLat = p.RightShoulder.clone().sub(p.LeftShoulder).normalize();
+  const down = p.MidHip.clone().sub(p.Core).normalize();
+  return (s) => {
+    let C, U;
+    if (s <= hs[0]) { U = down.clone().negate(); C = pts[0].clone().addScaledVector(down, (hs[0] - s) * b.T); }
+    else if (s >= hs[64]) { U = pts[64].clone().sub(pts[63]).normalize(); C = pts[64].clone().addScaledVector(U, (s - hs[64]) * b.T); }
+    else {
+      let i = 0;
+      while (i < 63 && hs[i + 1] < s) i++;
+      const f = (s - hs[i]) / Math.max(hs[i + 1] - hs[i], 1e-6);
+      C = pts[i].clone().lerp(pts[i + 1], Math.min(1, Math.max(0, f)));
+      U = pts[i + 1].clone().sub(pts[i]).normalize();
+    }
+    const k = Math.min(1, Math.max(0, s));
+    const R = hipLat.clone().lerp(shLat, k * k * (3 - 2 * k));
+    R.addScaledVector(U, -R.dot(U)).normalize();
+    return { C, U, R, F: V().crossVectors(U, R).normalize() };
+  };
+}
+
+// gi@1 lapel edge, as [across (toward the panel's own side), height (0 neck → 1 belt), forward of the spine].
+const LAPEL = [[0.065, 0, 0.015], [0.075, 0.12, 0.075], [0.035, 0.27, 0.112], [-0.02, 0.42, 0.12], [-0.065, 0.68, 0.114], [-0.1, 1, 0.105]];
+const CHAINS = ["Nape", "LeftLapel", "RightLapel", "BackHem", "LeftCuff", "RightCuff", "LeftPantsCuff", "RightPantsCuff", "BeltKnot", "LeftBeltTail", "RightBeltTail"];
+
+/** gi@1 at rest on a player, before projection. Also the anchors the hanging points hang from. */
+function restPoints(p) {
+  const b = torso(p), frameAt = spine(p, b), m = (y) => y / b.T;
+  const pts = {}, anchors = {};
+  const neck = frameAt(1);
+  pts.Nape = [at(neck, neck.C, 0, 0.03, -0.075)];
+  for (const [name, side] of [["LeftLapel", -1], ["RightLapel", 1]]) {
+    const over = name === "LeftLapel" ? 0.008 : 0;
+    const chain = LAPEL.map(([x, h, z], i) => {
+      const f = frameAt(1 - h + (i === 0 ? m(0.02) : 0));
+      return at(f, f.C, side * x, 0, z + (i >= 2 ? over : 0));
+    });
+    const skirt = frameAt(m(-0.26));
+    chain.push(at(skirt, skirt.C, -side * 0.11, 0, 0.1 + over));
+    pts[name] = chain;
+  }
+  const hx = b.hipHalf + 0.07, hem = frameAt(m(-0.27)), top = frameAt(m(-0.02));
+  pts.BackHem = [at(hem, hem.C, hx, 0, -0.03), at(hem, hem.C, 0, -0.01, -0.1), at(hem, hem.C, -hx, 0, -0.03)];
+  anchors.BackHem = [at(top, top.C, hx, 0, -0.02), at(top, top.C, 0, 0, -0.1), at(top, top.C, -hx, 0, -0.02)];
+  for (const s of ["Left", "Right"]) {
+    pts[s + "Cuff"] = [p[s + "Wrist"].clone().add(p[s + "Elbow"].clone().sub(p[s + "Wrist"]).setLength(0.045))];
+    pts[s + "PantsCuff"] = [p[s + "Ankle"].clone().add(p[s + "Knee"].clone().sub(p[s + "Ankle"]).setLength(0.07))];
+  }
+  const belt = frameAt(0), knot = at(belt, belt.C, 0, 0, 0.112);
+  pts.BeltKnot = [knot];
+  for (const [name, side] of [["LeftBeltTail", -1], ["RightBeltTail", 1]]) {
+    const dir = V().addScaledVector(belt.U, -0.9).addScaledVector(belt.R, side * 0.25).addScaledVector(belt.F, 0.25).normalize();
+    pts[name] = [1, 2, 3].map((i) => knot.clone().addScaledVector(dir, 0.08 * i));
+  }
+  // Rest lies on the body's own surface, so rest lengths are what the drape can keep.
+  // Cuffs are the centre of an opening, not cloth on a surface.
+  const own = body(p).all;
+  for (const [c, list] of Object.entries(pts)) if (!CENTRES.has(c)) list.forEach((q) => pushOut(q, own));
+  anchors.BackHem.forEach((q) => pushOut(q, own));
+  return { pts, anchors, frame: b };
+}
+const CENTRES = new Set(["LeftCuff", "RightCuff", "LeftPantsCuff", "RightPantsCuff"]);
+
+function pushOut(q, solids, passes = 2, margin = CLOTH) {
+  for (let pass = 0; pass < passes; pass++) for (const s of solids) push(q, s, margin);
+  return q;
+}
+
+/** The belt band as a loop around the waist, for drawing and for the tuck check. */
+function beltLoop(p, n = 24) {
+  const b = torso(p), f = spine(p, b)(0), hx = b.hipHalf + 0.06, own = body(p).all;
+  return Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2; return pushOut(at(f, f.C, hx * Math.sin(a), 0, 0.105 * Math.cos(a)), own); });
+}
+
+function closest(p, a, b) {
+  const ab = b.clone().sub(a), l2 = ab.lengthSq();
+  const t = l2 < 1e-10 ? 0 : Math.min(1, Math.max(0, p.clone().sub(a).dot(ab) / l2));
+  return a.clone().addScaledVector(ab, t);
+}
+
+/** Hands and fingers sit on the cloth, never push it: a hand on a chest would get cloth tented over it. */
+const HANDS = new Set(sided("Palm", "Finger0", "Finger1", "Finger2", "Finger3", "ThumbBase", "ThumbTip", "ThumbBall", "ThumbBaseBall", "Knuckles", "WristBall", "WristSeam"));
+const noHands = (solids) => solids.filter((s) => !HANDS.has(s.name));
+
+/**
+ * The rest drape plus a grip: position-based steps, deterministic.
+ * opts: { grip: { player, chain, index, target: Vector3 } | null, untucked: [player, chain][] }
+ *
+ * A grip pulls its point toward the target; it does not pin it there. The cloth's lengths and
+ * the bodies have the last word, so a collar pulled too far goes taut round the neck and the grip
+ * check says the hand did not get there, instead of the cloth passing through the neck. Links collide as well as points, so a stretch of cloth between two
+ * points cannot cut through a body either.
+ */
+function drape(pose, opts = {}) {
+  const caps = [...noHands(body(pose[0]).all), ...noHands(body(pose[1]).all)];
+  const players = pose.map((p, k) => {
+    const { pts, anchors } = restPoints(p);
+    const nodes = [], links = [];
+    const add = (chain, i, mode) => {
+      const n = { player: k, chain, i, p: pts[chain][i].clone(), rest: pts[chain][i].clone(), mode, pull: null };
+      nodes.push(n);
+      return nodes.length - 1;
+    };
+    const idx = {};
+    for (const c of CHAINS) idx[c] = [];
+    idx.Nape.push(add("Nape", 0, "body"));
+    for (const c of ["LeftLapel", "RightLapel"]) {
+      const untucked = (opts.untucked || []).some(([pl, ch]) => pl === k && ch === c);
+      for (let i = 0; i < 7; i++) idx[c].push(add(c, i, i <= 4 ? "body" : i === 5 ? (untucked ? "hang" : "tucked") : "hang"));
+      links.push([idx.Nape[0], idx[c][0]]);
+      for (let i = 0; i < 6; i++) links.push([idx[c][i], idx[c][i + 1]]);
+    }
+    for (let i = 0; i < 3; i++) {
+      idx.BackHem.push(add("BackHem", i, "hang"));
+      const anchor = { player: k, chain: "anchor", i, p: anchors.BackHem[i].clone(), rest: anchors.BackHem[i].clone(), mode: "fixed" };
+      nodes.push(anchor);
+      links.push([nodes.length - 1, idx.BackHem[i]]);
+    }
+    for (let i = 0; i < 2; i++) links.push([idx.BackHem[i], idx.BackHem[i + 1]]);
+    links.push([idx.LeftLapel[6], idx.BackHem[0]], [idx.RightLapel[6], idx.BackHem[2]]);
+    for (const c of ["LeftCuff", "RightCuff", "LeftPantsCuff", "RightPantsCuff", "BeltKnot"]) idx[c].push(add(c, 0, "body"));
+    for (const c of ["LeftBeltTail", "RightBeltTail"]) {
+      for (let i = 0; i < 3; i++) idx[c].push(add(c, i, "hang"));
+      links.push([idx.BeltKnot[0], idx[c][0]], [idx[c][0], idx[c][1]], [idx[c][1], idx[c][2]]);
+    }
+    const lengths = links.map(([a, b]) => nodes[a].rest.distanceTo(nodes[b].rest));
+    return { nodes, links, lengths, idx };
+  });
+
+  const g = opts.grip;
+  if (g) {
+    const n = players[g.player].nodes[players[g.player].idx[g.chain][g.index]];
+    n.pull = g.target.clone();
+  }
+  const GRAVITY = 0.004, SHAPE = 0.08, PULL = 0.5, CUT = 0.025, ITER = 140;
+  /** Held where it is by the body: a tucked lapel under the belt, the hem's anchors. */
+  const held = (n) => n.mode === "fixed" || n.mode === "tucked";
+  for (let it = 0; it < ITER; it++) {
+    for (const pl of players) {
+      for (const n of pl.nodes) {
+        if (n.mode === "fixed") continue;
+        if (n.mode === "tucked") { n.p.copy(n.rest); continue; }
+        if (n.pull) { n.p.lerp(n.pull, PULL); continue; }
+        if (it >= ITER - 20) continue; // the last steps only settle lengths and contacts, so the cloth can slide around what presses it
+        if (n.mode === "hang") n.p.y -= GRAVITY;
+        else n.p.lerp(n.rest, n.chain === "Nape" ? 0.5 : SHAPE);
+      }
+      // Three samples along each link: one deeper than CUT inside a body means the link cuts
+      // through it (a chord over a curved chest dips in by millimetres; that is not a cut). It is
+      // pushed to the surface, the push shared by the link's ends by their part in the sample, at
+      // most twice the push; before the lengths, so they still hold after it (every fourth step,
+      // and every one of the last).
+      if (it % 4 === 0 || it >= ITER - 20) pl.links.forEach(([a, b]) => {
+        const A = pl.nodes[a], B = pl.nodes[b];
+        for (const t of [0.25, 0.5, 0.75]) {
+          const q = A.p.clone().lerp(B.p, t), d = pushOut(q.clone(), caps, 1, 0).sub(q);
+          if (d.length() < CUT) continue;
+          const wa = held(A) ? 0 : 1 - t, wb = held(B) ? 0 : t, w = wa * wa + wb * wb;
+          if (w === 0) continue;
+          A.p.addScaledVector(d, Math.min(2, wa / w));
+          B.p.addScaledVector(d, Math.min(2, wb / w));
+        }
+      });
+      pl.links.forEach(([a, b], li) => {
+        const A = pl.nodes[a], B = pl.nodes[b];
+        const wa = held(A) ? 0 : 1, wb = held(B) ? 0 : 1;
+        if (wa + wb === 0) return;
+        const d = B.p.clone().sub(A.p), len = d.length(), max = pl.lengths[li];
+        if (len <= max || len < 1e-9) return;
+        const corr = d.multiplyScalar((len - max) / len / (wa + wb));
+        A.p.addScaledVector(corr, wa);
+        B.p.addScaledVector(corr, -wb);
+      });
+      for (const n of pl.nodes) {
+        if (n.mode === "fixed" || n.mode === "tucked" || CENTRES.has(n.chain)) continue;
+        pushOut(n.p, caps);
+        if (n.p.y < 0.008) n.p.y = 0.008;
+      }
+    }
+  }
+  return players;
+}
+
+/** The validation rules this page can run: stretch, tuck, grip distance, depth inside a body. */
+function check(pose, players, grip) {
+  const caps = [...noHands(body(pose[0]).all), ...noHands(body(pose[1]).all)];
+  let stretch = 0, depth = 0, tuck = 0;
+  players.forEach((pl, k) => {
+    pl.links.forEach(([a, b], li) => { stretch = Math.max(stretch, pl.nodes[a].p.distanceTo(pl.nodes[b].p) / pl.lengths[li] - 1); });
+    for (const n of pl.nodes) {
+      if (n.chain === "anchor" || CENTRES.has(n.chain)) continue;
+      for (const s of caps) depth = Math.max(depth, push(n.p.clone(), s, 0));
+    }
+    const loop = beltLoop(pose[k]);
+    for (const c of ["LeftLapel", "RightLapel"]) {
+      const n = pl.nodes[pl.idx[c][5]];
+      if (n.mode !== "tucked") continue;
+      tuck = Math.max(tuck, Math.min(...loop.map((q) => q.distanceTo(n.p))));
+    }
+  });
+  let gripDist = null;
+  if (grip) {
+    const n = players[grip.player].nodes[players[grip.player].idx[grip.chain][grip.index]];
+    gripDist = pose[grip.by.player][grip.by.hand].distanceTo(n.p);
+  }
+  return { stretch, depth, tuck, gripDist };
+}
+
+/** gi@1 points of one player in the stored order, for encoding. */
+function ordered(pl) {
+  const out = [];
+  for (const c of CHAINS) for (const i of pl.idx[c]) out.push(pl.nodes[i].p);
+  return out;
+}
+// </core>
+
+// <garment> The fabric, rebuilt every frame from the skeleton with the gi points as its handles:
+// each panel's front edge runs through its lapel chain, the skirt's bottom through BackHem, each
+// sleeve ends at its cuff. Move a point and the cloth around it follows, as bones move a skin.
+// The jacket follows the spine (MidHip → Core → Neck), the belt cinches it at the waist, the
+// sleeves and the pants are laid on the mannequin's own limbs, and no vertex of any piece is left
+// inside a piece of either mannequin.
+const ROWS = 30, COLS = 34;
+const PRESSED = 0.006; // cloth against the other body: pressed, not padded
+const SLEEVE = 0.016, PANTS = 0.018; // how loose the sleeves and the pants are, past the limb
+
+/** The jacket's cross-section at height y above the belt: half width and half depth. */
+function section(b, y, shoulderHalf) {
+  // Sized for the mannequin's pelvis, abdomen and chest; settle() keeps the rest out of it.
+  if (y < 0) { const f = clamp01(-y / 0.3); return [b.hipHalf + 0.1 + f * 0.04, 0.142 + f * 0.02]; }
+  const t = y / b.T, top = Math.max(shoulderHalf + 0.015, 0.2);
+  if (t > 0.84) { const k = smooth(clamp01((t - 0.84) / 0.2)); return [lerp(top, 0.088, k), lerp(0.158, 0.084, k)]; }
+  const k = smooth(clamp01(t / 0.84));
+  return [lerp(b.hipHalf + 0.1, top, k), lerp(0.142, 0.158, k)];
+}
+
+/** Keeps q out of every solid, `margin` off it; returns how far it moved. */
+function keepOut(q, solids, margin) {
+  let d = 0;
+  for (const s of solids) d += push(q, s, margin);
+  return d;
+}
+/** Keeps every point out of each [solids, margin] pair, in order: the last rule wins. */
+function settle(points, rules, skip) {
+  points.forEach((q, i) => { if (!skip?.(i)) for (const [caps, margin] of rules) keepOut(q, caps, margin); });
+}
+
+/** settle() for a finished geometry: the belt, the bands and the tails. */
+function settleGeometry(geo, rules) {
+  const a = geo.attributes.position, q = V();
+  for (let i = 0; i < a.count; i++) {
+    q.set(a.getX(i), a.getY(i), a.getZ(i));
+    for (const [caps, margin] of rules) keepOut(q, caps, margin);
+    a.setXYZ(i, q.x, q.y, q.z);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function gridGeometry(pos, rows, cols, uv) {
+  const g = new THREE.BufferGeometry();
+  const flat = new Float32Array(pos.length * 3);
+  pos.forEach((q, i) => { flat[i * 3] = q.x; flat[i * 3 + 1] = q.y; flat[i * 3 + 2] = q.z; });
+  g.setAttribute("position", new THREE.BufferAttribute(flat, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  const idx = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const a = r * (cols + 1) + c, d = a + cols + 1;
+    idx.push(a, d, a + 1, a + 1, d, d + 1);
+  }
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * One jacket panel, from the back seam around the wearer's side to the front edge, laid on
+ * the spine's frames. side -1 is the left panel (on top), +1 the right one.
+ */
+function jacketPanel(p, b, frameAt, pl, side) {
+  const chain = side < 0 ? "LeftLapel" : "RightLapel", over = side < 0 ? 1.035 : 1;
+  const act = pl.idx[chain].map((i) => pl.nodes[i].p), rest = pl.idx[chain].map((i) => pl.nodes[i].rest);
+  const cA = new THREE.CatmullRomCurve3(act, false, "centripetal"), cR = new THREE.CatmullRomCurve3(rest, false, "centripetal");
+  const hem = pl.idx.BackHem.map((i) => pl.nodes[i].p);
+  const sideHem = side < 0 ? hem[2] : hem[0], backHem = hem[1];
+  const sh = p.LeftShoulder.distanceTo(p.RightShoulder) / 2;
+  const phiBack = side < 0 ? -Math.PI - 0.06 : Math.PI + 0.06, phiSide = side * Math.PI / 2; // the panels overlap a little at the back seam
+  const pos = [], uv = [], rows = [];
+  for (let r = 0; r <= ROWS; r++) {
+    const t = r / ROWS, eA = cA.getPoint(t), eR = cR.getPoint(t);
+    const s = eR.clone().sub(b.W).dot(b.U) / b.T, f = frameAt(s);
+    const [a, dd] = section(b, s * b.T, sh);
+    const E = (phi) => f.C.clone().addScaledVector(f.R, a * over * Math.sin(phi)).addScaledVector(f.F, dd * over * Math.cos(phi));
+    // Where the rest lapel sits on this section: the panel ends there, then is pulled to the actual point.
+    const d = eR.clone().sub(f.C);
+    let phiE = Math.atan2(d.dot(f.R) / (a * over), d.dot(f.F) / (dd * over));
+    if (side < 0) phiE = Math.max(phiE, phiBack + 0.3); else phiE = Math.min(phiE, phiBack - 0.3);
+    rows.push({ f, phiE });
+    const skirt = smooth(clamp01(t * 6 - 5));
+    const edgeT = eA.clone().sub(E(phiE));
+    const backT = backHem.clone().sub(E(phiBack)), sideT = sideHem.clone().sub(E(phiSide));
+    const uSide = clamp01((phiSide - phiBack) / (phiE - phiBack));
+    for (let c = 0; c <= COLS; c++) {
+      const u = c / COLS, q = E(phiBack + (phiE - phiBack) * u);
+      q.addScaledVector(edgeT, smooth(clamp01((u - 0.4) / 0.6)));
+      if (skirt > 0) {
+        const h = u <= uSide ? backT.clone().lerp(sideT, uSide ? u / uSide : 1)
+          : sideT.clone().multiplyScalar(1 - smooth(clamp01((u - uSide) / Math.max(1e-6, 1 - uSide))));
+        q.addScaledVector(h, skirt);
+      }
+      pos.push(q);
+      uv.push(u * 5, t * 6);
+    }
+  }
+  return { pos, uv, rows };
+}
+
+/**
+ * The collar: one padded band from the right lapel up around the back of the neck, through
+ * the Nape, and down the left lapel. Behind the neck it stands up; on the chest it lies on its
+ * panel and runs into the lapel band.
+ */
+function collarBand(p, pl, f) {
+  const node = (c, i) => pl.nodes[pl.idx[c][i]].p;
+  const path = [node("RightLapel", 2), node("RightLapel", 1), node("RightLapel", 0), node("Nape", 0), node("LeftLapel", 0), node("LeftLapel", 1), node("LeftLapel", 2)];
+  const curve = new THREE.CatmullRomCurve3(path, false, "centripetal");
+  const nd = p.Head.clone().sub(p.Neck).normalize(), top = p.Neck.clone().addScaledVector(nd, 0.15);
+  const S = 48, pos = [], uv = [];
+  for (let i = 0; i <= S; i++) {
+    const t = i / S, c = curve.getPointAt(t), tan = curve.getTangentAt(t);
+    const n = c.clone().sub(closest(c, p.Core, top)).normalize();
+    const w = V().crossVectors(n, tan).normalize();
+    // Up behind the neck; toward its own panel (the wearer's side) on the chest.
+    const k = smooth(clamp01(Math.abs(t - 0.5) / 0.5));
+    const pref = nd.clone().lerp(f.R.clone().multiplyScalar(t > 0.5 ? -1 : 1), k);
+    if (w.dot(pref) < 0) w.negate();
+    // Behind the neck the band reaches down over the jacket's top; on the chest it starts at the edge.
+    const lo = lerp(-0.04, -0.006, k), hi = 0.044;
+    const ring = [[0.002, lo], [0.002, hi], [0.013, hi], [0.013, lo]];
+    for (const [out, along] of [...ring, ring[0]]) pos.push(c.clone().addScaledVector(n, out).addScaledVector(w, along));
+    for (let j = 0; j <= 4; j++) uv.push(j / 4, t * 4);
+  }
+  return { pos, uv, rows: S, cols: 4 };
+}
+
+/** The thick lapel band along a panel's front edge, folded onto the panel. */
+function lapelBand(panel, width = 0.045) {
+  // From the second lapel point down; above it, the collar is the band.
+  const pts = [], uv = [], r0 = Math.round(ROWS / 3);
+  for (let r = r0; r <= ROWS; r++) {
+    const e = panel.pos[r * (COLS + 1) + COLS], inner = panel.pos[r * (COLS + 1) + COLS - 1];
+    const along = panel.pos[Math.min(ROWS, r + 1) * (COLS + 1) + COLS].clone().sub(panel.pos[Math.max(0, r - 1) * (COLS + 1) + COLS]);
+    const { f } = panel.rows[r];
+    const radial = e.clone().sub(f.C);
+    radial.addScaledVector(f.U, -radial.dot(f.U)).normalize();
+    // Across the edge, on the panel's surface, toward its inside.
+    const dir = V().crossVectors(along, radial);
+    if (dir.dot(inner.clone().sub(e)) < 0) dir.negate();
+    dir.setLength(width);
+    pts.push(e.clone().addScaledVector(radial, 0.006), e.clone().add(dir).addScaledVector(radial, 0.006));
+    uv.push(0, (r / ROWS) * 6, 1, (r / ROWS) * 6);
+  }
+  return gridGeometry(pts, ROWS - r0, 1, uv);
+}
+
+/** One ring of cloth in a frame: a superellipse of half widths a, b round the frame's y at height y, then moved by `shift`. */
+function ring(pos, uv, frame, y, a, b, zc, n, v, shift, radial = 24) {
+  const e = 2 / n;
+  for (let j = 0; j <= radial; j++) {
+    const th = (j / radial) * Math.PI * 2, c = Math.cos(th), s = Math.sin(th);
+    const q = V(a * Math.sign(c) * Math.abs(c) ** e, y, zc + b * Math.sign(s) * Math.abs(s) ** e).applyMatrix4(frame);
+    if (shift) q.add(shift);
+    pos.push(q);
+    uv.push((j / radial) * 3, v);
+  }
+}
+
+// Where each limb piece has its full section, as fractions of its bone; past these it rounds off
+// into a joint ball, which the cloth covers on its own.
+const FULL = { UpperArm: [0, 0.88], ForeArm: [0.12, 0.88], Thigh: [0.04, 0.84], Shin: [0.16, 0.86] };
+
+/**
+ * A sleeve or a pants leg, laid on the mannequin's own pieces: rings round the upper piece, a fan
+ * of rings turning about the joint from the upper piece's frame to the lower one's, then rings
+ * round the lower piece to the cuff. Each ring is the piece's own section plus `slack`, in the
+ * piece's own frame, and never smaller than a joint ball where it passes one. So the cloth bends
+ * where the body bends, the outside of the elbow or the knee is always under a ball's width of
+ * fabric, and the inside folds into a crease: there is no bend that opens it onto the body.
+ */
+function limb(B, s, kind, cuff, slack) {
+  const [up, low, ball, root, from] = kind === "arm" ? ["UpperArm", "ForeArm", "ElbowBall", "ShoulderBall", -0.12] : ["Thigh", "Shin", "KneeBall", "HipBall", -0.08];
+  const U = B.by[s + up], D = B.by[s + low], k = U.s.x, lenU = U.s.y, lenD = D.s.y;
+  const J = V().setFromMatrixPosition(D.m), dir = V(0, 1, 0).applyQuaternion(D.q);
+  const rJ = B.by[s + ball].s.x / k, rRoot = B.by[s + root].s.x / k, sl = slack / k;
+  // The cuff, along the lower bone and off it (a pulled sleeve takes the end of the tube with it).
+  const uC = Math.min(1.3, Math.max(0.3, cuff.clone().sub(J).dot(dir) / lenD));
+  const off = cuff.clone().sub(J.clone().addScaledVector(dir, uC * lenD));
+  const cover = (sec, d, r) => { const h = Math.sqrt(Math.max(0, r * r - d * d)) + Math.abs(sec[2]); return [Math.max(sec[0], h), Math.max(sec[1], h), sec[2]]; };
+  const held = (piece, name, u) => sectionAt(piece.t, Math.min(FULL[name][1], Math.max(FULL[name][0], u)));
+  const pos = [], uv = [];
+  let rows = 0;
+  const NU = 16, NF = 8, ND = 16;
+  for (let i = 0; i <= NU; i++) {
+    const u = from + (1 - from) * (i / NU);
+    let sec = cover(held(U, up, u), Math.abs(u) * lenU / k, rRoot);
+    sec = cover(sec, (1 - u) * lenU / k, rJ);
+    // Narrower at the open end, which sits inside the jacket or the seat.
+    const taper = 0.75 + 0.25 * smooth(clamp01((u - from) / 0.15));
+    ring(pos, uv, U.m, u, (sec[0] + sl) * taper, (sec[1] + sl) * taper, sec[2], U.t.n, rows++ / 10);
+  }
+  const end = held(U, up, 1), start = held(D, low, 0), q = new THREE.Quaternion(), fan = new THREE.Matrix4(), one = V(k, 1, k);
+  for (let i = 1; i < NF; i++) {
+    const f = i / NF, sec = cover([lerp(end[0], start[0], f), lerp(end[1], start[1], f), lerp(end[2], start[2], f)], 0, rJ);
+    fan.compose(J, q.slerpQuaternions(U.q, D.q, f), one);
+    ring(pos, uv, fan, 0, sec[0] + sl, sec[1] + sl, sec[2], 2, rows++ / 10);
+  }
+  for (let i = 0; i <= ND; i++) {
+    const u = uC * (i / ND), w = smooth(i / ND), sec = cover(held(D, low, u), u * lenD / k, rJ), g = sl * (1 + 0.5 * w);
+    ring(pos, uv, D.m, u, sec[0] + g, sec[1] + g, sec[2], D.t.n, rows++ / 10, off.clone().multiplyScalar(w));
+  }
+  return { pos, uv, rows: rows - 1, cols: 24 };
+}
+
+/** The pants' seat: the pelvis piece's own rings from its bottom to above the belt, plus slack, closed at the bottom. */
+function seat(B, slack) {
+  const P = B.by.pelvis, t = P.t, sl = slack / P.s.x, pos = [], uv = [];
+  ring(pos, uv, P.m, t.y[0] - slack / P.s.y, 0, 0, t.zc[0], t.n, 0);
+  let rows = 1;
+  for (let i = 0; i < t.y.length && t.y[i] <= 0.45; i++) ring(pos, uv, P.m, t.y[i], t.a[i] + sl, t.b[i] + sl, t.zc[i], t.n, rows++ / 10);
+  return { pos, uv, rows: rows - 1, cols: 24 };
+}
+
+/**
+ * Contact for a sleeve, a pants leg or the seat: the other body (and the wearer's other limb)
+ * press the cloth; any point they moved is then kept out of the wearer's own limb, so a press
+ * never pushes the cloth under the skin it covers.
+ */
+function press(pos, rules, guard) {
+  for (const q of pos) {
+    let d = 0;
+    for (const [solids, margin] of rules) d += keepOut(q, solids, margin);
+    if (d > 0) for (const [solids, margin] of guard) keepOut(q, solids, margin);
+  }
+}
+
+/** A flat strip along points, its width across `across`: belt band and tails. */
+function ribbon(points, width, across, closed = false, segs = 18) {
+  const curve = new THREE.CatmullRomCurve3(points, closed, "centripetal");
+  const pts = [], uv = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs, s = closed ? t % 1 : t, c = curve.getPointAt(s), tan = curve.getTangentAt(s);
+    const w = typeof across === "function" ? across(c, tan) : V().crossVectors(tan, across);
+    if (w.lengthSq() < 1e-8) w.set(1, 0, 0);
+    w.normalize().multiplyScalar(width / 2);
+    pts.push(c.clone().sub(w), c.clone().add(w));
+    uv.push(t, 0, t, 1);
+  }
+  return gridGeometry(pts, segs, 1, uv);
+}
+
+/** The whole gi of one player: geometries by part, so materials can differ. */
+function garment(p, pl, other) {
+  const b = torso(p), frameAt = spine(p, b);
+  const own = body(p), them = noHands(body(other).all);
+  const P = (c, i = 0) => pl.nodes[pl.idx[c][i]].p;
+  const chain = (c) => pl.idx[c].map((i) => pl.nodes[i].p);
+  const out = { jacket: [], band: [], sleeves: [], pants: [], belt: [], tails: [] };
+
+  // The belt line: a ring on the body at the waist. The jacket is cinched inside it, the belt drawn on it.
+  const f0 = frameAt(0), N = 48;
+  const ringRho = Array.from({ length: N }, (_, i) => {
+    const phi = (i / N) * Math.PI * 2 - Math.PI;
+    const q = f0.C.clone().addScaledVector(f0.R, (b.hipHalf + 0.06) * Math.sin(phi)).addScaledVector(f0.F, 0.105 * Math.cos(phi));
+    for (let k = 0; k < 2; k++) keepOut(q, [...own.upper, ...own.lower], CLOTH + PANTS);
+    const d = q.sub(f0.C);
+    return Math.hypot(d.dot(f0.R), d.dot(f0.F));
+  });
+  const ring = ringRho.map((r, i) => (Math.max(r, ringRho[(i + 1) % N], ringRho[(i + N - 1) % N]) + r) / 2);
+  const rhoAt = (phi) => { const x = ((phi + Math.PI) / (Math.PI * 2)) * N, i = Math.floor(x); return lerp(ring[((i % N) + N) % N], ring[(i + 1) % N], x - i); };
+  const cinch = (pos) => {
+    for (const q of pos) {
+      const d = q.clone().sub(f0.C), y = d.dot(f0.U);
+      if (Math.abs(y) >= 0.09) continue;
+      const x = d.dot(f0.R), z = d.dot(f0.F), rho = Math.hypot(x, z), lim = rhoAt(Math.atan2(x, z)) - 0.006;
+      if (rho <= lim || rho < 1e-6) continue;
+      const nr = lerp(rho, lim, smooth(1 - Math.abs(y) / 0.09));
+      q.copy(f0.C).addScaledVector(f0.U, y).addScaledVector(f0.R, (x / rho) * nr).addScaledVector(f0.F, (z / rho) * nr);
+    }
+  };
+
+  // Over the pants below the belt, so the skirt and the seat never show through each other.
+  const jacketRules = [[[...own.upper, ...noHands(own.forearms)], CLOTH], [own.lower, PANTS + 0.012]];
+  const pressed = [[them, PRESSED]];
+  for (const side of [1, -1]) {
+    const panel = jacketPanel(p, b, frameAt, pl, side);
+    const edge = (i) => i % (COLS + 1) === COLS; // the edge is data: the lapel chain itself
+    settle(panel.pos, jacketRules, edge);
+    cinch(panel.pos);
+    // The other body presses the cloth; then the own body again, so nothing of it ever shows through.
+    settle(panel.pos, [...pressed, ...jacketRules], edge);
+    out.jacket.push(gridGeometry(panel.pos, ROWS, COLS, panel.uv));
+    out.band.push(settleGeometry(lapelBand(panel), pressed));
+  }
+  const collar = collarBand(p, pl, frameAt(1));
+  settle(collar.pos, [[them, PRESSED], [[...own.upper, ...own.head], 0.004]]);
+  out.band.push(gridGeometry(collar.pos, collar.rows, collar.cols, collar.uv));
+
+  // Each sleeve also keeps out of the other arm, each pants leg out of the other leg: crossed arms, knees together.
+  const tube = (t, rules, guard) => { press(t.pos, rules, guard); return gridGeometry(t.pos, t.rows, t.cols, t.uv); };
+  for (const [s, o] of [["Left", "Right"], ["Right", "Left"]]) {
+    out.sleeves.push(tube(limb(own, s, "arm", P(s + "Cuff"), SLEEVE), [[them, PRESSED], [own.arm(o), CLOTH]], [[own.arm(s), 0.004]]));
+    out.pants.push(tube(limb(own, s, "leg", P(s + "PantsCuff"), PANTS), [[them, PRESSED], [own.leg(o), CLOTH]], [[own.leg(s), 0.004]]));
+  }
+  out.pants.push(tube(seat(own, PANTS), [[them, PRESSED]], [[own.lower, 0.004]]));
+
+  const loop = Array.from({ length: N }, (_, i) => {
+    const phi = (i / N) * Math.PI * 2 - Math.PI, r = ring[i] + 0.004;
+    return f0.C.clone().addScaledVector(f0.R, r * Math.sin(phi)).addScaledVector(f0.F, r * Math.cos(phi));
+  });
+  out.belt.push(settleGeometry(ribbon(loop, 0.048, (c, tan) => V().crossVectors(tan, f0.U).cross(tan), true, 96), pressed));
+  const knot = f0.C.clone().addScaledVector(f0.F, rhoAt(0) + 0.026);
+  const across = (c, tan) => { const w = V().crossVectors(tan, f0.F); return w.lengthSq() > 1e-6 ? w : f0.R.clone(); };
+  out.tails.push(...["LeftBeltTail", "RightBeltTail"].map((c) => settleGeometry(ribbon([knot, ...chain(c)], 0.042, across), pressed)));
+  const knotGeo = new THREE.BoxGeometry(0.085, 0.058, 0.034);
+  knotGeo.applyMatrix4(new THREE.Matrix4().makeBasis(f0.R, f0.U, f0.F).setPosition(knot));
+  out.knot = settleGeometry(knotGeo, pressed);
+  return out;
+}
+
+const WEAVE = (() => {
+  // A pearl weave: a checker of tiny cells with noise, tiled over the fabric.
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const x = c.getContext("2d"), img = x.createImageData(128, 128);
+  for (let j = 0; j < 128; j++) for (let i = 0; i < 128; i++) {
+    const cell = ((i >> 2) + (j >> 2)) & 1, n = Math.abs(Math.sin(i * 12.9898 + j * 78.233) * 43758.5453) % 1;
+    const v = Math.round(226 + cell * 14 + n * 15), k = (j * 128 + i) * 4;
+    img.data[k] = img.data[k + 1] = img.data[k + 2] = Math.min(255, v);
+    img.data[k + 3] = 255;
+  }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+})();
+
+function beltTexture(rank, degrees) {
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 16;
+  const x = c.getContext("2d");
+  x.fillStyle = window.RANKS[rank]; x.fillRect(0, 0, 256, 16);
+  x.fillStyle = rank === "black" ? "#c8102e" : "#1a1a1c"; x.fillRect(118, 0, 108, 16);
+  x.fillStyle = "#ffffff";
+  for (let i = 0; i < degrees; i++) x.fillRect(208 - i * 15, 0, 7, 16);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+// </garment>
+
+window.__giCore = { decode, drape, check, ordered, encodePoints, restPoints, torso, spine, body, push, CHAINS, garment };
+
+const POSES = {
+  standing: {
+    title: "symmetric staggered standing", line: 564, view: 1.45,
+    code: "KhaCPET1aKFnNJaSOrXfaGHeMIbVOKV5bBHaMbiTOHRzgSGXQ0nrMyRrnzISOrv8NKNDvWInLZthQzKysyJrH8uQRiHgvaKrHvvER8GjvWKGGgvVR3FavFK7QurnKQNFwSK5LByzLwDoaAKvuIaAU9zKaFK2ryaNTiAMbGK7sAbLTyBTiwLzwChoTJxKnDNPvEnGQUzlwtMYyOwxShASsEKNCdtkSdEnuVJZF3u1ReE2v4JWGPvTQKGlv3JPH5vEQwwSrCPtzwxjPEBAyZPj",
+    grip: { by: { player: 0, hand: "RightHand" }, player: 1, chain: "LeftLapel", index: 1, text: "P0 right hand → P1 LeftLapel@1, a collar grip. This no-gi position has none: the hand is 38 cm away. Pulled all the way, the collar goes taut round the neck and stops 14 cm short: the cloth neither stretches to the hand nor passes through the neck. The editor would move the hand instead." },
+  },
+  guard: {
+    title: "distance closed guard", line: 1592, view: 1.6, lift: 0.75, camPlayer: 0,
+    code: "y9aAzEwGaAEUCactAOzmcPF1BNa8AwyMbBGAICbrBlDRbqLjClecCrANd3FNIOiYEoGwiZJsJvelD5F8esKFLqdYHQKpebJJLSeNIILreJKbMKetJDMmefKSCYhLESHTjwG2JKlhHVwUgTzjuXi2BozBe3A5w9gxCUyCf2BtxwhNCaAthaH4EthbBxGfdfIqHZcpFeNRcGNwQjcvIFJQa8PfPka9EhHibML0LfbaFLHec7L1LzcmFpHJdKK3KKdjFrKobTIMPMcSLsRreMMc",
+    grip: { by: { player: 0, hand: "LeftHand" }, player: 1, chain: "LeftLapel", index: 3, text: "P0 (top) left hand → P1 LeftLapel@3: the hand posts on the chest, 2.8 cm off the lapel, so in a gi it is already a lapel grip: it passes at rest, and pulling brings the cloth into the hand." },
+  },
+  back: {
+    title: "seated back w/ seatbelt", line: 1659, view: 0.6,
+    code: "IFdhv4I0fYxLJmcHzDKodvz7IXdUyRKbeVz9HjgnFaQqgmCHKWbTIZOobOHyLYkcLAQBjkINHVjvJiQnfnGjKyiQFSNnhYENLJiwFzMJiZEnL4hWEvLpi0EqNQewKSOKknKDObl3ICFbaAsiMmaAqRFYaDvWMiaCuBFrbvuZLZbttxDOfQz5NDg9w6IQbGCtMqbGBeJXhnJtNWjnGPGhhOGDRpg2ETKbilEPNOiwDjKGjqFkNdjDDGLVjHFeMujCEILEehEDLHjeIqKwlAH8",
+    grip: { by: { player: 0, hand: "LeftHand" }, player: 1, chain: "RightLapel", index: 2, text: "P0 (behind) left hand → P1 RightLapel@2, the seatbelt hand near the collar: 6.6 cm away at rest, just past the rule. Pulling does not help: the seatbelt's forearm lies on the lapel, so the cloth cannot come nearer the hand. The editor would move the hand." },
+  },
+  transition: {
+    title: "armlock from closed guard", line: 5658, view: 1.6, lift: 0.75, camPlayer: 0, grip: null,
+    // The steps of data/techniques/armlock-from-closed-guard.json, at its keyframes (each keyframe is
+    // two of these densified frames). The transition sets the lock up; finishing it is the next one.
+    steps: [
+      [0, "Closed guard, opponent at a distance.", "Guarda fechada, adversário afastado."],
+      [4, "Control the arm and turn the hips to that side.", "Controle o braço e gire o quadril para o lado dele."],
+      [8, "Leg over the head, knees together.", "Perna por cima da cabeça, joelhos fechados."],
+      [12, "Leg over, hips turned: the lock is set, not finished.", "Perna por cima, quadril girado: a chave está montada, não finalizada."],
+    ],
+    frames: ["y9aAzEwGaAEUCactAOzmcPF1BNa8AwyMbBGAICbrBlDRbqLjClecCrANd3FNIOiYEoGwiZJsJvelD5F8esKFLqdYHQKpebJJLSeNIILreJKbMKetJDMmefKSCYhLESHTjwG2JKlhHVwUgTzjuXi2BozBe3A5w9gxCUyCf2BtxwhNCaAthaH4EthbBxGfdfIqHZcpFeNRcGNwQjcvIFJQa8PfPka9EhHibML0LfbaFLHec7L1LzcmFpHJdKK3KKdjFrKobTIMPMcSLsRreMMc","zXaAyCwjaAFIB0bAAWzubKFYCda3AayMbfGQIUbsByDBbsLJCndICrAOduFMIxi6ElGoiPJqJweJE6G0epKuL5d9IcLderJnMreOJdL8eDJ9NzeAJNNfevKoCUhgEVHSjkG5JJk6HUxkhsCkxZljB2z4fDD6zlidDey6gCEszTjkCpB9hpKqGqhuBwGccOIvH5b6FnN5cMNCQmcwIEJLbzOzOPblErJfcQLcLqcGGaJtdYK3KXdBGrKserKCKadLG4KrbTIZPMcDLpRoeBL4","AIaAxzvTaBGwBQaGA3zyaGFXCza1zPyKa1G3JabsBwDfbsMcCpdbCrANcQFJIgi0EkGhiyJqIVeTGqH1emKcMsd8IrMfd9JhMMeLJsNdexJXN3eOJPOqedJPCNgFE0HPi3G7JJkNHUxUhHFyBtnECAAKfWHcBYj1DjzKgSHACJkZCzD6hKMOIPh2BRGacmICIebTFwOkcSNJQpcyIEJGccNROgbDEELpeiKHLPeGGtLYeRJWKOe1HdMUfcJeKNfRH5KtbTJfPNcuLpRoeuLX","AOaAxrvQaBGCBPaAA4zyaAFWCCa1zMyJa1G5JcbsBxDcbsMfCmcZCqAIcvFHIdirErGih4JxHSeAGXI8ewJ3LKdYIlNkd3JeMheJJdOlevJRNveHJBPwd5JwCDgpE8HLiLHdJOkjHYyBgqGNDwoaCgBHeMHMDFksCuATfSIcEBlnCeFfhKM0KoifC0F5b5IyInbXFzOfcXN5QocCIXJwcPNlOgbBEPMfeNKBLLeGG0MEe3JDKMfbHJNwfnINKMfoIXKobTJwPHctLJRkevMg","AJaAxzvTaBGvBQaGA3zyaFFWCAa1zPyKa1G3I9bsBzDebsMaCjcWCqADclFFIdhWEqGrhCJzGWepHeJXeBJYK3dUHZN8ecI9LJeIIGPdeyJBMXeKIPQnd8I7CwggFgHKivHcJTjTH3zbe5HfEWn7BPCwdyHEEFksBMBUeNH2FKllCfFYhAMCLhihEzF9bLIzImbSFzOrcUNNQlczIDJRdaMVN6bGEGMRe5KFLUevG9MTe3JoKZeZHUNTfhIGK2faI6KsbTJqPLcsLnRsevLP","AJaAxzvSaAGvBQaGA3zwaBFWCAa1zPyIa1G1I9bsBzC6bsMcCjcYCsACcfFDIahLEpGBhmJBG0eiHkKeeoJyLbecHMOsepIGMaeSHWPyeJIFNeejH0QHexIkCugbFoHJikHbJQjNH1zmeDHbFTojBOCXdcHMEZkPB8CaenHZGdlxCtF2hEMILvhSEAGPbIIVH1bJFyPScvLkP8b8F5LMcRMkMOclDuNBfiJNMjeyGHNve4IvLneWHuOofhHFLtfdIHKZbTItQucdIHSeedIJ","AJaAxzvTaBGwBQaGA3zxaCFWCAa1zPyJa1G3I9bsBzDebsMaCkc3CwACchFFH6hIEmGJhfJDHoefHmKlefI9LBelHAOAd7H7MHe1HiPBeKHNNOelHbQLejHMCsgdFxHKifG9JMjPH0zwflG9GwowB0CBdtHWE2lgCOB7eLH8GolLCOF1hKMHLthrEbHtbHJhHDbHFyRgb6ITPUbIDzNEcoLTLzc0ChOdfhIVMJeAGbN0e5HGLKeUGWOMeRGILSfpIaLubTHxRbccF5S5d2FE","AIaAxzvTaBGwBQaGA3zyaDFWCAa1zPyKa1G3I9bsBzDfbsL9Cjc1CvACciFFH5hGEjGGhgJzHBeeHmKgehI1LOemHtOwd3H9MXeXG8PxeJHON5elG6QIeiHKCqgfFuHGidG5JBjOH4zHjqJcG5oUCwBfgGIUFmlLDnByhHJpGLl7DdGthNMVLthjD0HwbHJlHwbHFzRob6ICPRbHDhNRciLTLoc7B7OifeIRMNeFF6N4e8HDLQeXGTOQeLGFLZfxH4LwbTHrReceFMTbd1Fh","AIaAxzvTaBGwBQaGA3zyaEFWCAa1zPyKa1G3I9bsBzDgbsL8CjcYCtACcjFFH3hFEeGzhlJuHPeeHlJ4emIWL1enHsOmd4IlNaeOG8PpeJH5OhegHgQAeiHSCnghFmHCieGZJnjNIbATnKLmHrpaC3ADkpJSFEl5DWBHkZKIG4mkDDHfhLM5LtheDNHobHJkHvbHFBRacdIWPQbNDCNBciL0Lwc3CfOefcI4MJeLF6NZfbHPLOe1GWONeOGTLUfDH3LpbTHzQ6ciF7S5d2FF","ALaAxwvUaBGwBNaCA4zyaEFWCAa1zPyKa1G4I9bsBzDgbsL9CicVCsABckFFH2hEEcGthpJqH3ecHiJYeqIRMeenHsOgd6IpNneIG3PkeLIeOvefHiQtekHUCkgiFgHxidGVJcjMIhE6pkMqHqoXDfDomPKuFJlWEsEwmLLqG6l7DZIvhzM2Lyg4DyHkbHJjHsbHFBQ8cgIYPObPDENzcgL2Luc3CeOdfcI8MHeOF3NYfdHVLOe2GUOLeTGYLQfFH0LmbTHAQ4ciF9S4d1FF","AIaAxzvUaBGwBQaGA4zyaFFWCAa1zOyKa1G3I9bsBzDgbsL8CjcUCrACckFEH0hCD9GlhuJlIjd9HeJReAIDMteoHpN9eaIwNDeAGYPeeLIpOMegHkQlenHXCggkE8HsidGRIXjKInJipLL3HhoADnGxobKeFKlEEWHznCK9G2lLEjJPhoMFLAgSDfHhbHJjHqbHFCQ6cjIZPMbSDFNyceL4Lsc5CdOeffJfMGeNF1NWfgH2LQe5GSOIeXG4LQfHHYLjbTHBQ1cgGaS2dZFG","AnaBxZvRaBGuCcbeAXzxaFFUCAa1zLyHa1G0JbbsBDDibsL4Cpc2CjAOcmFAHYhuD3F9hCJcIMebHbJLe1H3MXeoHoNUemIEN4eiGWO3eJIIPfemHkP4etH4B9gsEXHlifGHItjFIyKsptIyHeoeDDHtnCHPFPloFuIFnfIzG2lsEFKOhvLnLsgxCPHibSJtHkbHFKQ1cpI2PHbWDHNuccL8Loc7CdOefjJsMGeJF0NTfmIfLWfcGOOEe5HgLUfKHVLebTHBQXcfGeSZdVFH","z2aDyqvOaBGsCybMAPzwaFFRCAa0zGyEaZGWJdbqBGDlbqL0CwdaCcA0coFwHWhkDXF1hHI4JceeHeJDfiHmNoeoHvNFewIHOsd2GXOSeEI0PDesHjPOeyIbB3gBEOHgigGzH4jBIHKtoOEXHbnXDPHwmAFiFQleFVIVmsFHGYliEYLwhHJ1LogpCKHhb9JBHebLFRQWcvI5PEb0DJNsb9MdLkc9CdOcfkJDMGexF4NPfrIpL2fhGKOye7HrL1fJHTLabTHDQSclGhSYdTFH"],
+  },
+};
+
+/** Joints and gi points between two draped keyframes. */
+function between(A, B, f) {
+  const pose = A.pose.map((p, k) => {
+    const q = {};
+    for (const j of [...JOINTS, "MidHip"]) q[j] = p[j].clone().lerp(B.pose[k][j], f);
+    return q;
+  });
+  const players = A.players.map((pl, k) => ({
+    ...pl, lengths: pl.lengths.map((len, i) => lerp(len, B.players[k].lengths[i], f)), nodes: pl.nodes.map((n, i) => ({ ...n, p: n.p.clone().lerp(B.players[k].nodes[i].p, f), rest: n.rest.clone().lerp(B.players[k].nodes[i].rest, f) })),
+  }));
+  return { pose, players };
+}
+
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const view = document.getElementById("view");
+const tip = document.getElementById("tip");
+const state = { pose: "standing", pull: 0, untuck: false, time: 0, playing: true };
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch {
+  document.getElementById("fallback").style.display = "grid";
+}
+
+if (renderer) {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  view.prepend(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 50);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.3));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -2, right: 2, top: 2, bottom: -2, near: 0.5, far: 12 });
+  sun.shadow.bias = -0.0005;
+  scene.add(sun, sun.target);
+  const fill = new THREE.DirectionalLight(0xbfd4ff, 0.6);
+  fill.position.set(-3, 2, -2);
+  scene.add(fill);
+  const mat = new THREE.Mesh(new THREE.CircleGeometry(2.4, 64), new THREE.MeshStandardMaterial({ roughness: 1 }));
+  mat.rotation.x = -Math.PI / 2;
+  mat.receiveShadow = true;
+  scene.add(mat);
+  let group = new THREE.Group();
+  scene.add(group);
+  let pickables = [];
+  let beltTex = null, beltKey = "";
+  // The fighters: the site's mannequins in the wood look, the joints in each fighter's colour.
+  // Kept out of `group`, whose geometries are thrown away every rebuild; the mannequin's are shared.
+  const figures = [new Mannequin(), new Mannequin()], uniforms = sharedUniforms(), painted = ["", ""];
+  for (const f of figures) scene.add(f.group);
+
+  const UP = V(0, 1, 0);
+  const BONES = [
+    ["Head", "Neck"], ["Neck", "Core"], ["LeftShoulder", "RightShoulder"], ["LeftHip", "RightHip"], ["Core", "MidHip"],
+    ...["Left", "Right"].flatMap((s) => [
+      [s + "Shoulder", s + "Elbow"], [s + "Elbow", s + "Wrist"], [s + "Wrist", s + "Hand"], [s + "Hand", s + "Fingers"],
+      [s + "Hip", s + "Knee"], [s + "Knee", s + "Ankle"], [s + "Ankle", s + "Heel"], [s + "Heel", s + "Toe"],
+    ]),
+  ];
+  const add = (geo, material) => {
+    const m = new THREE.Mesh(geo, material);
+    m.castShadow = m.receiveShadow = true;
+    group.add(m);
+    return m;
+  };
+
+  function themeScene() {
+    scene.background = new THREE.Color(css("--scene"));
+    mat.material.color.set(css("--mat"));
+  }
+
+  function current() {
+    const def = POSES[state.pose];
+    if (!def.frames) {
+      const pose = decode(def.code), g = def.grip;
+      const hand = pose[g.by.player][g.by.hand];
+      const rest = restPoints(pose[g.player]).pts[g.chain][g.index];
+      const grip = { ...g, target: rest.clone().lerp(hand, state.pull) };
+      const untucked = state.untuck ? [[g.player, g.chain]] : [];
+      return { def, pose, players: drape(pose, { grip: state.pull > 0 ? grip : null, untucked }), g };
+    }
+    // Each keyframe is draped once; in between, everything is interpolated.
+    def.keys ??= def.frames.map((code) => { const pose = decode(code); return { pose, players: drape(pose, {}) }; });
+    const n = def.keys.length, t = Math.min(state.time, n - 1), k = Math.min(n - 2, Math.floor(t));
+    return { def, ...between(def.keys[k], def.keys[k + 1], smooth(t - k)), g: null };
+  }
+
+  let lastPanel = 0;
+  function rebuild(resetCamera) {
+    themeScene();
+    scene.remove(group);
+    group.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    group = new THREE.Group();
+    scene.add(group);
+    pickables = [];
+
+    const { def, pose, players, g } = current();
+    const show = (id) => document.getElementById(id).checked;
+    const app = window.appearance;
+    const playerColor = [css("--amber"), css("--blue")];
+    const giColors = [window.GI[app.gi], window.GI[app.gi === "blue" ? "white" : "blue"]];
+    const key = app.rank + app.degrees;
+    if (key !== beltKey) { beltTex?.dispose(); beltTex = beltTexture(app.rank, app.degrees); beltKey = key; }
+    const beltMat = new THREE.MeshStandardMaterial({ color: window.RANKS[app.rank], roughness: 0.65, side: THREE.DoubleSide });
+    const barMat = new THREE.MeshStandardMaterial({ map: beltTex, roughness: 0.65, side: THREE.DoubleSide });
+    const regionMat = new THREE.MeshStandardMaterial({ color: css("--blue"), transparent: true, opacity: 0.55, roughness: 0.8, side: THREE.DoubleSide });
+
+    pose.forEach((p, k) => {
+      const pl = players[k], f = figures[k];
+      if (painted[k] !== playerColor[k]) { f.paint(paint("wood", playerColor[k], uniforms, "white", false)); painted[k] = playerColor[k]; }
+      f.pose(p);
+      f.group.visible = show("tBody");
+      // With the gi on, its own belt is the belt.
+      f.pieces.belt.visible = f.pieces.knot.visible = !show("tGi");
+
+      if (show("tGi")) {
+        const fabric = new THREE.MeshPhysicalMaterial({
+          color: giColors[k], map: WEAVE, roughness: 0.92, sheen: 0.8, sheenRoughness: 0.55,
+          sheenColor: new THREE.Color(giColors[k]).lerp(new THREE.Color(0xffffff), 0.6), side: THREE.DoubleSide,
+        });
+        const bandMat = fabric.clone();
+        bandMat.color = new THREE.Color(giColors[k]).multiplyScalar(app.gi === "white" || k === 1 && app.gi === "blue" ? 0.9 : 1.25);
+        const gm = garment(p, pl, pose[1 - k]);
+        for (const geo of gm.jacket) add(geo, fabric);
+        for (const geo of gm.band) add(geo, bandMat);
+        for (const geo of gm.sleeves) add(geo, show("tReg") ? regionMat : fabric);
+        for (const geo of gm.pants) add(geo, show("tReg") ? regionMat : fabric);
+        for (const geo of gm.belt) add(geo, beltMat);
+        add(gm.tails[0], beltMat);
+        add(gm.tails[1], barMat);
+        add(gm.knot, beltMat);
+      }
+
+      if (show("tPts")) {
+        const ptMat = new THREE.MeshBasicMaterial({ color: playerColor[k] });
+        const ring = new THREE.MeshBasicMaterial({ color: css("--ink") });
+        for (const n of pl.nodes) {
+          if (n.chain === "anchor") continue;
+          const m = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 8), n.mode === "tucked" ? ring : ptMat);
+          m.position.copy(n.p);
+          m.userData.label = `P${k} · ${n.chain}${pl.idx[n.chain].length > 1 ? "[" + n.i + "]" : ""} · ${n.mode === "tucked" ? "held by the belt" : n.mode === "hang" ? "hanging" : "on the body"}`;
+          group.add(m);
+          pickables.push(m);
+        }
+      }
+
+      if (show("tSkel")) {
+        const geo = new THREE.BufferGeometry().setFromPoints(BONES.flatMap(([a, b]) => [p[a], p[b]]));
+        group.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: css("--ink") })));
+      }
+    });
+
+    const result = check(pose, players, g);
+    if (g) {
+      // The grip: a line from the hand to its cloth target.
+      const target = players[g.player].nodes[players[g.player].idx[g.chain][g.index]].p;
+      const gl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([pose[g.by.player][g.by.hand], target]),
+        new THREE.LineDashedMaterial({ color: result.gripDist <= 0.06 ? css("--ok") : css("--tension"), dashSize: 0.02, gapSize: 0.015 }));
+      gl.computeLineDistances();
+      group.add(gl);
+    }
+
+    // Side panel; while playing, a few times a second is enough.
+    const now = performance.now();
+    if (resetCamera || !def.frames || now - lastPanel > 200) {
+      lastPanel = now;
+      document.getElementById("poseInfo").innerHTML = `<b>${def.title}</b><br>GrappleMap.txt, line ${def.line}. P0 is <span class="p0">amber</span>, P1 <span class="p1">blue</span>.`;
+      document.getElementById("gripBox").hidden = !g;
+      document.getElementById("transBox").hidden = !def.frames;
+      const caption = document.getElementById("caption");
+      caption.hidden = !def.steps;
+      if (def.steps) {
+        const i = def.steps.findLastIndex(([f]) => f <= state.time + 1e-6);
+        const [, en, pt] = def.steps[i];
+        caption.innerHTML = `<span class="step">step ${i + 1} of ${def.steps.length}</span><br>${en}<span class="pt" lang="pt-BR">${pt}</span>`;
+      }
+      if (g) document.getElementById("gripInfo").textContent = g.text;
+      if (def.frames) document.getElementById("frameOut").textContent = `frame ${Math.min(state.time, def.frames.length - 1).toFixed(2)} of ${def.frames.length - 1}`;
+      const rows = [
+        g ? [result.gripDist <= 0.06, "grip: hand at target", (result.gripDist * 100).toFixed(1) + " cm", "≤ 6 cm"] : null,
+        [result.stretch <= 0.05, "longest stretch", "+" + Math.max(0, result.stretch * 100).toFixed(0) + "%", "≤ 5%"],
+        [result.tuck <= 0.04, "tucked lapels at the belt", (result.tuck * 100).toFixed(1) + " cm", "≤ 4 cm"],
+        [result.depth <= 0.01, "gi point inside a body", Math.max(0, result.depth * 100).toFixed(1) + " cm", "≤ 1 cm"],
+      ].filter(Boolean);
+      document.getElementById("checks").innerHTML = rows.map(([pass, name, v, tol]) =>
+        `<li><span class="dot ${pass ? "pass" : "fail"}"></span><span>${name} <span class="note">(${tol})</span></span><span class="v">${v}</span></li>`).join("");
+      const skeleton = def.code ?? def.frames[Math.round(Math.min(state.time, def.frames.length - 1))];
+      const enc = [skeleton, encodePoints(ordered(players[0])), encodePoints(ordered(players[1]))];
+      document.getElementById("encoded").innerHTML = enc.map((s, i) => `<span class="s${i}">${s}</span>`).join("");
+    }
+
+    if (resetCamera && def.frames) {
+      // The transition: frame the arm being attacked (P0's elbow nearest P1's hips at the end),
+      // from its outer side, a little above, so the setup reads from the first frame to the lock.
+      const last = def.keys.at(-1).pose, [top, bottom] = last;
+      const s = ["Left", "Right"].sort((a, b) => top[a + "Elbow"].distanceTo(bottom.MidHip) - top[b + "Elbow"].distanceTo(bottom.MidHip))[0];
+      const arm = V().subVectors(top[s + "Wrist"], top[s + "Shoulder"]), side = V().crossVectors(arm, UP).setY(0).normalize();
+      if (side.dot(V().subVectors(top[s + "Elbow"], top.Core)) < 0) side.negate();
+      // Far enough to keep both heads in view: the guard player's leg goes over the top player's head.
+      const c = top[s + "Elbow"].clone().lerp(bottom.MidHip, 0.4).lerp(top.Head, 0.25);
+      controls.target.copy(c);
+      camera.position.copy(c).addScaledVector(side, 2.3).add(V(0, 1.5, 0));
+      mat.position.set(c.x, 0, c.z);
+      sun.position.set(c.x + 1.5, 4, c.z + 2);
+      sun.target.position.copy(c);
+      controls.update();
+    } else if (resetCamera) {
+      // Fit both bodies, looking at the front of the player whose cloth is gripped.
+      const box = new THREE.Box3().setFromPoints(pose.flatMap((p) => JOINTS.map((j) => p[j])));
+      const c = box.getCenter(V()), radius = box.getSize(V()).length() / 2 + 0.15;
+      const f = torso(pose[def.camPlayer ?? (g ? g.player : 0)]).F.setY(0);
+      if (f.lengthSq() < 1e-6) f.set(0, 0, 1);
+      f.normalize().applyAxisAngle(UP, def.view);
+      const dist = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.78;
+      controls.target.copy(c);
+      camera.position.copy(c).addScaledVector(f, dist * 0.9).add(V(0, dist * (def.lift ?? 0.42), 0));
+      mat.position.set(c.x, 0, c.z);
+      sun.position.set(c.x + 1.5, 4, c.z + 2);
+      sun.target.position.copy(c);
+      controls.update();
+    }
+  }
+
+  function resize() {
+    const w = view.clientWidth, h = view.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(view);
+  resize();
+
+  const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+  renderer.domElement.addEventListener("pointermove", (e) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera);
+    const hit = ray.intersectObjects(pickables)[0];
+    if (hit) {
+      tip.textContent = hit.object.userData.label;
+      tip.style.display = "block";
+      tip.style.left = Math.min(e.clientX - r.left + 12, r.width - tip.offsetWidth - 6) + "px";
+      tip.style.top = (e.clientY - r.top + 12) + "px";
+    } else tip.style.display = "none";
+  });
+  renderer.domElement.addEventListener("pointerleave", () => (tip.style.display = "none"));
+
+  const playBtn = document.getElementById("play"), scrub = document.getElementById("scrub");
+  document.querySelectorAll("#poseSeg button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#poseSeg button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+    state.pose = b.dataset.pose;
+    state.pull = 0;
+    state.time = 0;
+    document.getElementById("pull").value = 0;
+    rebuild(true);
+  }));
+  for (const id of ["tBody", "tGi", "tPts", "tReg", "tSkel"]) document.getElementById(id).addEventListener("change", () => rebuild(false));
+  document.getElementById("pull").addEventListener("input", (e) => { state.pull = +e.target.value; rebuild(false); });
+  document.getElementById("tUntuck").addEventListener("change", (e) => { state.untuck = e.target.checked; rebuild(false); });
+  playBtn.addEventListener("click", () => { state.playing = !state.playing; playBtn.textContent = state.playing ? "Pause" : "Play"; });
+  scrub.addEventListener("input", () => { state.playing = false; playBtn.textContent = "Play"; state.time = +scrub.value; rebuild(false); });
+  window.addEventListener("appearance", () => rebuild(false));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => rebuild(false));
+
+  window.__preview = { camera, controls, rebuild, current, figures, group: () => group, state };
+  window.__poses = Object.fromEntries(Object.entries(POSES).map(([k, d]) => [k, d.code ?? d.frames[0]]));
+  rebuild(true);
+  const clock = new THREE.Clock();
+  let sinceBuild = 0;
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.1);
+    const def = POSES[state.pose];
+    if (def.frames && state.playing) {
+      // A frame a second (a keyframe every two), a pause on the lock, then again.
+      const n = def.frames.length;
+      state.time += dt;
+      if (state.time > n - 1 + 2.5) state.time = 0;
+      sinceBuild += dt;
+      if (sinceBuild > 1 / 30) { sinceBuild = 0; scrub.value = Math.min(state.time, n - 1); rebuild(false); }
+    }
+    controls.update();
+    renderer.render(scene, camera);
+  });
+}
+</script>
+</body>
+</html>
