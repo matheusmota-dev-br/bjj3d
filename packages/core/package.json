@@ -9,8 +9,5 @@
     ".": "./src/index.ts",
     "./contact": "./src/contact.ts",
     "./testing": "./src/testing/poses.ts"
-  },
-  "devDependencies": {
-    "@bjj3d/grapplemap": "workspace:*"
   }
 }

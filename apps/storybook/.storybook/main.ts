@@ -8,9 +8,9 @@ import type { StorybookConfig } from "@storybook/html-vite";
 const web = (p: string) => fileURLToPath(new URL(`../../web/${p}`, import.meta.url));
 
 // The Pages level shows the site's production build; make it once if it is not there
-// (`npm run build` refreshes it after changes to the site).
+// (`pnpm build` refreshes it after changes to the site).
 if (!existsSync(web("dist/index.html"))) {
-  execFileSync("npm", ["run", "build", "-w", "@bjj3d/web"], { cwd: fileURLToPath(new URL("../../../", import.meta.url)), stdio: "inherit" });
+  execFileSync("pnpm", ["--filter", "@bjj3d/web", "build"], { cwd: fileURLToPath(new URL("../../../", import.meta.url)), stdio: "inherit" });
 }
 
 const config: StorybookConfig = {
@@ -18,7 +18,7 @@ const config: StorybookConfig = {
   stories: ["../stories/**/*.mdx", "../stories/**/*.stories.ts"],
   addons: ["@storybook/addon-docs"],
   staticDirs: [
-    // graph.json (npm run data) and the icons.
+    // graph.json (pnpm data) and the icons.
     web("public"),
     // The built site, for the Pages level.
     { from: web("dist"), to: "/site" },
