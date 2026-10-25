@@ -11,14 +11,15 @@ and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you c
 
 ## What you see
 
-- **Mannequins**: a rigid, rounded piece between each pair of GrappleMap joints, a ball at
-  each joint, blocks for the torso, a plain head (a small nose shows where it faces), simple
-  hands and feet, and a belt. Nothing deforms: every piece is placed straight from the 23
-  joints per player, so the figure is exactly the data. Amber and blue stay the same people
-  while you chain transitions.
+- **Mannequins**: a wooden figure, as an artist's mannequin (an egg head, a chest with
+  shoulders, abdomen and pelvis, tapered limbs, shoe-like feet, a belt), its pieces shaped
+  from five views of a reference (`docs/character.html`). A ball fills every joint, so a bent
+  one closes instead of opening a gap; the hand has a thumb and four fingers that fold together.
+  Nothing deforms: every piece is placed straight from the 23 joints per player, so the figure
+  is exactly the data. Amber and blue stay the same people while you chain transitions.
 - **Contact**: GrappleMap's figures are thin; given thickness they would sink into each other.
-  An offline solver (`packages/core/src/contact.ts`) gives each player capsules as thick as the
-  mannequin's pieces, separates what overlaps (touching is allowed), keeps bone lengths, keeps
+  An offline solver (`packages/core/src/contact.ts`) gives each player capsules close to the
+  mannequin's pieces (the wooden figure is a little fuller in the chest and thighs), separates what overlaps (touching is allowed), keeps bone lengths, keeps
   everything above the mat and stays close to the original pose. It also adds an in-between
   frame per keyframe gap so limbs do not pass through each other on the way. Over the
   database, the deepest overlap per transition goes from 5.2 cm to 1.5 cm (median; 1 cm is
