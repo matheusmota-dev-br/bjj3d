@@ -3,7 +3,7 @@
 // something of the opponent being where the leverage comes from. Each submission kind
 // has one metric; the viewer lights only the joint that the technique attacks.
 //
-// Thresholds are calibrated with `npm run validate` over the whole database; see
+// Thresholds are calibrated with `pnpm validate` over the whole database; see
 // docs/validation.md for the numbers they produce.
 
 import * as THREE from "three";

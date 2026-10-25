@@ -2,7 +2,7 @@
 // `// </mannequin>` lines: tools/gi-plan/mannequin.js bundled with the packages it imports, in a
 // scope of its own, with three taken from the page's import. The rest of the page is edited by hand.
 //
-//   node tools/gi-plan.mjs   (npm run gi-plan)
+//   node tools/gi-plan.mjs   (pnpm gi-plan)
 import { build } from "esbuild";
 import { readFileSync, writeFileSync } from "node:fs";
 

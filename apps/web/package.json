@@ -4,20 +4,20 @@
   "type": "module",
   "scripts": {
     "data": "node ../../packages/data/scripts/build-data.ts",
-    "predev": "npm run data",
+    "predev": "pnpm run data",
     "dev": "vite",
-    "prebuild": "npm run data",
+    "prebuild": "pnpm run data",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@bjj3d/core": "*",
-    "@bjj3d/data": "*",
-    "@bjj3d/editor": "*",
-    "@bjj3d/metrics": "*",
-    "@bjj3d/three": "*",
-    "@bjj3d/ui": "*",
+    "@bjj3d/core": "workspace:*",
+    "@bjj3d/data": "workspace:*",
+    "@bjj3d/editor": "workspace:*",
+    "@bjj3d/metrics": "workspace:*",
+    "@bjj3d/three": "workspace:*",
+    "@bjj3d/ui": "workspace:*",
     "three": "^0.181.0"
   }
 }

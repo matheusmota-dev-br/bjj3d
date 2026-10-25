@@ -9,14 +9,14 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@bjj3d/core": "*",
-    "@bjj3d/metrics": "*"
+    "@bjj3d/core": "workspace:*",
+    "@bjj3d/metrics": "workspace:*"
   },
   "peerDependencies": {
     "three": ">=0.181.0"
   },
   "devDependencies": {
-    "@bjj3d/data": "*",
-    "@bjj3d/grapplemap": "*"
+    "@bjj3d/data": "workspace:*",
+    "@bjj3d/grapplemap": "workspace:*"
   }
 }

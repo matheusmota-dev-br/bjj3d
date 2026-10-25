@@ -6,10 +6,10 @@ submissions and how they are shown.
 ## Getting started
 
 ```
-npm install
-npm run dev          # the site, with the local editor
-npm run storybook    # the catalog and the guides
-npm test             # unit tests (coverage must stay at 100%)
+pnpm install
+pnpm dev          # the site, with the local editor
+pnpm storybook    # the catalog and the guides
+pnpm test             # unit tests (coverage must stay at 100%)
 ```
 
 ## What you can add
@@ -22,7 +22,7 @@ npm test             # unit tests (coverage must stay at 100%)
 | a submission metric | a `SubmissionMetric` in `packages/metrics` | yes |
 | a place, a look, a belt | a `PlaceDef`, a `LookDef`, a colour, in `packages/three` | yes |
 
-Each one has a guide in the catalog (`npm run storybook` → Guides).
+Each one has a guide in the catalog (`pnpm storybook` → Guides).
 
 ## A new submission, step by step
 
@@ -30,7 +30,7 @@ Each one has a guide in the catalog (`npm run storybook` → Guides).
 2. Add it to `builtinMetrics` in `packages/metrics/src/metrics.ts`, or pass it to
    `createMetrics` in your own code.
 3. Watch it in Storybook (**Templates/Viewer**, **Reading** panel) on a transition with its tags.
-4. `npm run validate`: it measures every kind in the registry over the whole database and
+4. `pnpm validate`: it measures every kind in the registry over the whole database and
    rewrites `docs/validation.md`. Commit the new report with the metric.
 
 ## Rules of the code

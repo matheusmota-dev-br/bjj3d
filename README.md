@@ -77,11 +77,11 @@ GrappleMap, and technique texts exist in English and Portuguese only.
 ## Running
 
 ```
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-`npm run build` writes a static site to `apps/web/dist`. Links: `#p/<n>` opens position *n*,
+`pnpm build` writes a static site to `apps/web/dist`. Links: `#p/<n>` opens position *n*,
 `#t/<n>` transition *n* (`#t/<n>r` backwards), and `?frame=<k>` opens paused at keyframe *k*.
 Keys: space plays and pauses, the arrows step.
 For checking: `?debug=1` draws the solved stick figures over the mannequins, and
@@ -107,10 +107,10 @@ Submissions, places, looks and belts are registries: the viewer takes new ones a
 next to the built-ins (`new Viewer(canvas, { metrics, places, looks, belts })`), and
 `viewer.dispose()` releases everything it holds. The packages are not on npm yet.
 
-`npm run storybook` opens the catalog (`apps/storybook`): foundations, atoms, molecules,
+`pnpm storybook` opens the catalog (`apps/storybook`): foundations, atoms, molecules,
 organisms, templates and pages of the viewer, the engine (skeleton, metrics, every finish)
 and guides to extending it. Its Pages level shows the site's production build,
-made on first start (`npm run build` refreshes it).
+made on first start (`pnpm build` refreshes it).
 
 ## Layout
 
@@ -166,13 +166,13 @@ apps/storybook/        the catalog
 }
 ```
 
-`grapplemap_line` is where the transition starts in `GrappleMap.txt`; `npm run find -- "<name>"`
+`grapplemap_line` is where the transition starts in `GrappleMap.txt`; `pnpm find "<name>"`
 lists candidates. The build checks that the line goes from `from` to `to`. Optional fields:
 `note` and `risk` (both `{en, pt-BR}`).
 
 ## Adding positions and transitions (the local editor)
 
-The editor exists only in the dev server (`npm run dev`), never in a build: ⚙ → **✎ Editor**.
+The editor exists only in the dev server (`pnpm dev`), never in a build: ⚙ → **✎ Editor**.
 It poses the two mannequins by dragging their joints (the big ball moves a whole body; bone
 lengths are kept), keeps a list of frames (duplicate, delete, mirror, swap, turn), and saves
 the block in GrappleMap's own format to `data/grapplemap/bjj3d.txt`, which the data build
@@ -191,9 +191,9 @@ what lights the attacked joint.
 ## Tests
 
 ```
-npm test           # unit tests with coverage (must stay at 100%)
-npm run e2e        # end-to-end: the app driven like a person would
-npm run validate   # regenerates docs/validation.md
+pnpm test           # unit tests with coverage (must stay at 100%)
+pnpm e2e        # end-to-end: the app driven like a person would
+pnpm validate   # regenerates docs/validation.md
 ```
 
 - **Unit** (Vitest): plain modules run in Node; anything that needs WebGL or the DOM

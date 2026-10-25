@@ -16,9 +16,9 @@
     "find": "node scripts/find.ts"
   },
   "dependencies": {
-    "@bjj3d/core": "*",
-    "@bjj3d/grapplemap": "*",
-    "@bjj3d/metrics": "*"
+    "@bjj3d/core": "workspace:*",
+    "@bjj3d/grapplemap": "workspace:*",
+    "@bjj3d/metrics": "workspace:*"
   },
   "files": [
     "src",
