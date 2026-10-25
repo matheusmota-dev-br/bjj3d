@@ -72,6 +72,7 @@
   "help3": "Depois escolha o próximo movimento para seguir, como num treino.",
   "help4": "Numa finalização, a articulação atacada fica vermelha quando pode lesionar.",
   "helpOk": "Entendi",
+  "demoVideo": "Assista à demonstração de 60 segundos",
   "about": "Movimento do GrappleMap, esquemático e sem kimono. A carga nas articulações é estimada só pela geometria; não é medida de força.",
   "kind.elbow": "Chave de cotovelo",
   "kind.shoulder": "Chave de ombro",

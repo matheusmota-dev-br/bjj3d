@@ -43,7 +43,7 @@ export function sampleCinema(options: { help?: boolean } = {}) {
     titleCard: card.element, camChip: cam.element, settingsButton: settings.button, settings: settings.panel,
     oss: oss().element, attention: attention().element,
     customizer: customizer({ title: "Customize the fighters", done: "Done", onDone: () => {} }).element,
-    help: helpDialog({ title: "How to use", steps: ["Pick a technique.", "Press ▶ to watch."], ok: "Got it", onOk: () => {}, hidden: !options.help }),
+    help: helpDialog({ title: "How to use", steps: ["Pick a technique.", "Press ▶ to watch."], video: { label: "▶ Watch the 60-second demo", href: "https://youtu.be/yeQPuzHseZg" }, ok: "Got it", onOk: () => {}, hidden: !options.help }),
     player: strip.element,
   });
   return { screen, strip };

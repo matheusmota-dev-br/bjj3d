@@ -72,6 +72,7 @@
   "help3": "Puis choisissez le mouvement suivant pour continuer, comme à l'entraînement.",
   "help4": "Dans une soumission, l'articulation attaquée devient rouge quand elle peut être blessée.",
   "helpOk": "Compris",
+  "demoVideo": "Regarder la démo de 60 secondes",
   "about": "Mouvements de GrappleMap, schématiques et sans kimono. La charge sur les articulations est estimée à partir de la géométrie seulement ; ce n'est pas une mesure de force.",
   "kind.elbow": "Clé de coude",
   "kind.shoulder": "Clé d'épaule",

@@ -10,6 +10,7 @@ export const HowToUse: StoryObj = {
   render: () => box(420, [helpDialog({
     title: "How to use",
     steps: ["Pick a technique, finish or position in the panel.", "Press ▶ to watch. Drag to turn the camera.", "Then pick the next move to go on, as in training.", "In a finish, the attacked joint turns red when it can injure."],
+    video: { label: "▶ Watch the 60-second demo", href: "https://youtu.be/yeQPuzHseZg" },
     ok: "Got it", onOk: action("ok"),
   })]),
 };

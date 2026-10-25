@@ -9,7 +9,9 @@ says when it can cause injury.
 It covers the whole [GrappleMap](https://github.com/Eelis/GrappleMap) database: 601 positions
 and 1,485 transitions, no-gi, linked into a graph you can walk ("from here you can…").
 
-**[Open the app](https://bjj-3d.vercel.app)** · [UI catalog](https://bjj3d-ui.vercel.app) (Storybook)
+**[Open the app](https://bjj-3d.vercel.app)** · **[Watch the 60-second demo](https://youtu.be/yeQPuzHseZg)** · [UI catalog](https://bjj3d-ui.vercel.app) (Storybook)
+
+<p align="center"><a href="https://youtu.be/yeQPuzHseZg"><img src="https://img.youtube.com/vi/yeQPuzHseZg/maxresdefault.jpg" alt="bjj3d in 60 seconds: watch the demo on YouTube" width="720"></a></p>
 
 ![A move playing: the directed camera, the step caption and the filmstrip](docs/screens/watch.png)
 
