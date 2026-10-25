@@ -26,6 +26,7 @@
     "e2e": "npm run e2e -w @bjj3d/web",
     "storybook": "npm run dev -w @bjj3d/storybook",
     "build-storybook": "npm run build -w @bjj3d/storybook",
+    "character": "node tools/character.mjs",
     "gi-plan": "node tools/gi-plan.mjs"
   },
   "devDependencies": {
