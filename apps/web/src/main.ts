@@ -117,6 +117,7 @@ const drawer = customizerDrawer({ title: t("customize"), done: t("done"), onDone
 const help = helpDialog({
   title: t("helpTitle"),
   steps: (["help1", "help2", "help3", "help4"] as const).map((k) => t(k)),
+  video: { label: `▶ ${t("demoVideo")}`, href: "https://youtu.be/yeQPuzHseZg" },
   ok: t("helpOk"),
   onOk: () => { help.hidden = true; settings.helpSeen = true; save(); if (viewer.last > 0 && settings.oss) startOss(); },
   hidden: settings.helpSeen,

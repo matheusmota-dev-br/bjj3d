@@ -26,6 +26,9 @@ describe("first visit", () => {
     expect(thumbs()).toHaveLength(graph.techniques[first].steps.length);
     expect($("#help").hidden).toBe(false);
     expect($("#help-steps").children).toHaveLength(4);
+    expect(($("#help-video") as HTMLAnchorElement).href).toBe("https://youtu.be/yeQPuzHseZg");
+    expect(($("#help-video") as HTMLAnchorElement).target).toBe("_blank");
+    expect($("#help-video").textContent).toBe("▶ Assista à demonstração de 60 segundos");
     expect($("#oss").hidden).toBe(true);
     expect(document.documentElement.dataset.theme).toBe("light");
     expect($("#theme").textContent).toBe("☀");

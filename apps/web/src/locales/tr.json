@@ -72,6 +72,7 @@
   "help3": "Sonra antrenmandaki gibi devam etmek için sonraki hareketi seçin.",
   "help4": "Bitirişte, saldırılan eklem sakatlanabileceği anda kırmızı olur.",
   "helpOk": "Anladım",
+  "demoVideo": "60 saniyelik demoyu izleyin",
   "about": "Hareketler GrappleMap'ten, şematik ve gisiz. Eklem yükü yalnızca geometriden tahmin edilir; kuvvet ölçümü değildir.",
   "kind.elbow": "Dirsek kilidi",
   "kind.shoulder": "Omuz kilidi",

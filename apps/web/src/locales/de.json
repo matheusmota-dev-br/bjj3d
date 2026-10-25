@@ -72,6 +72,7 @@
   "help3": "Wähle dann die nächste Bewegung, um weiterzumachen, wie im Training.",
   "help4": "Bei einer Aufgabe wird das angegriffene Gelenk rot, wenn es verletzt werden kann.",
   "helpOk": "Verstanden",
+  "demoVideo": "Die 60-Sekunden-Demo ansehen",
   "about": "Bewegungen aus GrappleMap, schematisch und ohne Gi. Die Gelenkbelastung wird nur aus der Geometrie geschätzt; sie ist keine Kraftmessung.",
   "kind.elbow": "Ellbogenhebel",
   "kind.shoulder": "Schulterhebel",

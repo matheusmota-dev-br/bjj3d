@@ -72,6 +72,7 @@
   "help3": "Then pick the next move to keep going, like in a real roll.",
   "help4": "In a finish, the attacked joint turns red when it can be injured.",
   "helpOk": "Got it",
+  "demoVideo": "Watch the 60-second demo",
   "about": "Motion from GrappleMap, schematic and no-gi. Joint load is estimated from geometry only; it is not a measurement of force.",
   "kind.elbow": "Elbow lock",
   "kind.shoulder": "Shoulder lock",
