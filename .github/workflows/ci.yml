@@ -1,9 +1,13 @@
-# The full pipeline: unit tests with coverage, build, end-to-end and validation. It runs
-# only when started by hand (Actions → ci → Run workflow, or `gh workflow run ci`), since
-# WebGL without a GPU makes it take many minutes.
+# The full pipeline: unit tests with coverage, build, end-to-end and validation. It runs on
+# every pull request and on main; the viewer's tests draw off screen, so WebGL without a GPU
+# no longer makes it take many minutes. It can still be started by hand (Actions → ci → Run
+# workflow, or `gh workflow run ci`).
 name: ci
 
 on:
+  pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
