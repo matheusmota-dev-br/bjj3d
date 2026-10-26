@@ -8,7 +8,7 @@ import { $, boot, go } from "./test/app-harness.ts";
 vi.setConfig({ testTimeout: 120_000 });
 
 const openEditor = vi.fn();
-vi.mock("./editor.ts", () => ({ openEditor }));
+vi.mock("@bjj3d/editor", () => ({ openEditor }));
 
 const { viewer } = await boot({ before: () => sessionStorage.setItem("bjj3d.editor", "a saved block") });
 

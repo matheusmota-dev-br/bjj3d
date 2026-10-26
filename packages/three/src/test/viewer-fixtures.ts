@@ -34,6 +34,10 @@ export function makeViewer(width = 160, height = 90, loop = false): Viewer {
   // Software WebGL spends most of a frame on the 2048² shadow map; nothing the tests check
   // depends on shadows.
   v.renderer.shadowMap.enabled = false;
+  // Draw off screen: in software WebGL every frame presented on the page's canvas costs tens of
+  // milliseconds, paid after the test, and a test steps hundreds of frames. The tests read the
+  // viewer's state, not its pixels (thumbnails() draws to targets of its own).
+  v.renderer.setRenderTarget(new THREE.WebGLRenderTarget(width, height));
   made.push(v);
   return v;
 }

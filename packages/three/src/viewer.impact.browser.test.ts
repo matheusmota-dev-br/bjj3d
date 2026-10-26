@@ -25,10 +25,16 @@ test("the finishing moment starts once, peaks, slows time and ends", async () =>
   // At its peak time runs at 12% of the normal speed…
   const peak = frames.findIndex((f) => f.impact === 1);
   expect(frames[peak + 1].time - frames[peak].time).toBeCloseTo((DT / 0.8) * 0.12, 6);
-  // …and when it is over, at the normal speed again, while the lock is still on.
+  // …and when it is over, the lock is still on and time runs at the normal speed again. This
+  // armbar reaches its last frame while the moment still plays, so the clock has stopped by then:
+  // measure one step from a time the clip has not reached yet.
   const over = frames.findIndex((f, k) => k > peak && f.impact === 0);
   expect(frames[over].reading!.danger).toBe(true);
-  expect(frames[over + 1].time - frames[over].time).toBeCloseTo(DT / 0.8, 6);
+  v.time = v.last / 2;
+  v.playing = true;
+  const [next] = run(v, 1, DT);
+  expect(next.impact).toBe(0);
+  expect(next.time - v.last / 2).toBeCloseTo(DT / 0.8, 6);
 });
 
 test("at the finishing moment the directed camera pushes in on the joint", async () => {
