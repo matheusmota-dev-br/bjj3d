@@ -16,6 +16,9 @@ export default defineConfig({
           name: "browser",
           include: TESTS.map((t) => t.replace(".test.ts", ".browser.test.ts")),
           testTimeout: 60_000,
+          // One file at a time: every file shares the browser's one (software) GPU process, and
+          // files drawing in parallel queue behind each other until a few frames take minutes.
+          fileParallelism: false,
           browser: { enabled: true, headless: true, provider: playwright(), instances: [{ browser: "chromium" }], viewport: { width: 1280, height: 800 } },
         },
       },

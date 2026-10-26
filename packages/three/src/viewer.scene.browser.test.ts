@@ -3,6 +3,10 @@
 import * as THREE from "three";
 import { afterEach, expect, test, vi } from "vitest";
 import { ARMBAR, clip, disposeViewers, inside, loadDb, makeViewer, run } from "./test/viewer-fixtures.ts";
+import { Viewer } from "./viewer.ts";
+import { builtinPlaces } from "./environment.ts";
+import { builtinLooks } from "./materials.ts";
+import { BELT_COLORS } from "./mannequin.ts";
 
 afterEach(disposeViewers);
 
@@ -102,4 +106,47 @@ test("a look is built once per fighter and reused", () => {
   v.setLook("wood");
   expect(inside(v).fighters[1].paints.wood).toBe(wood);
   expect(v.look).toBe("wood");
+});
+
+test("an unknown place, look or belt falls back to the default; a look may leave out shadows", async () => {
+  const db = await loadDb();
+  const paint = vi.fn(builtinLooks[0].paint);
+  // A canvas of its own, for a viewer with an added look; dispose loses its context, which would
+  // stall the fixture's shared canvas.
+  const canvas = document.body.appendChild(document.createElement("canvas"));
+  canvas.style.cssText = "width:32px;height:18px;display:block";
+  const v = new Viewer(canvas, { looks: [{ id: "plain", paint }] });
+  v.renderer.setAnimationLoop(null);
+  v.show(clip(db, ARMBAR));
+  v.setEnvironment("on the moon", "light");
+  expect(v.controls.maxDistance).toBe(builtinPlaces.find((d) => d.id === "mat")!.build("light").maxDistance);
+  v.setLook("velvet");
+  expect(inside(v).fighters[0].paints.velvet).toBeDefined();
+  v.setStyle(0, { build: 0.5, belt: "rainbow" });
+  v.setLook("plain");
+  expect(paint).toHaveBeenCalledWith(expect.anything(), expect.anything(), BELT_COLORS.white, expect.any(Boolean));
+  for (const m of inside(v).fighters[0].mannequin.group.children) expect(m.castShadow).toBe(true);
+  v.dispose();
+  canvas.remove();
+});
+
+test("dispose releases the viewer: the loop, the controls, the textures and the WebGL context", async () => {
+  // A canvas of its own: losing the context of the fixture's shared one would stall the other tests.
+  const canvas = document.body.appendChild(document.createElement("canvas"));
+  canvas.style.cssText = "width:32px;height:18px;display:block";
+  const v = new Viewer(canvas);
+  v.show(clip(await loadDb(), ARMBAR));
+  const background = new THREE.Texture();
+  const map = new THREE.Texture();
+  v.scene.background = background;
+  v.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.MeshBasicMaterial({ map })));
+  const disposed = [vi.spyOn(background, "dispose"), vi.spyOn(map, "dispose")];
+  const loop = vi.spyOn(v.renderer, "setAnimationLoop");
+  const controls = vi.spyOn(v.controls, "dispose");
+  v.dispose();
+  expect(loop).toHaveBeenCalledWith(null);
+  expect(controls).toHaveBeenCalledOnce();
+  for (const d of disposed) expect(d).toHaveBeenCalled();
+  expect(v.renderer.getContext().isContextLost()).toBe(true);
+  canvas.remove();
 });
