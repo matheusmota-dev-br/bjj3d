@@ -3,7 +3,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { ContactSolver } from "@bjj3d/core/contact";
 import { buildGraph, parse } from "@bjj3d/grapplemap";
-import { chokeGap, flexion, glowPoint, kneeTwist, read, shoulderRotation, SIDED, submissionKind, throat, type Kind, type Side } from "./metrics.ts";
+import { builtinMetrics, chokeGap, createMetrics, flexion, glowPoint, kneeTwist, read, shoulderRotation, SIDED, submissionKind, throat, type Kind, type Side } from "./metrics.ts";
 import { standing, withJoints } from "@bjj3d/core/testing";
 import { landmarksFromPlayer } from "./landmarks.ts";
 
@@ -109,4 +109,13 @@ test("the glow sits on the attacked joint, between knee and ankle for a twist, a
   assert.ok(glowPoint("neckCrank", l, "Right").equals(throat(l)));
   // Unsided kinds read the same either way.
   for (const k of Object.keys(SIDED) as Kind[]) if (!SIDED[k]) assert.deepEqual(read(k, l, far, "Left"), read(k, l, far, "Right"));
+});
+
+test("a registry lists the kinds it holds, in the order they were given", () => {
+  assert.deepEqual(createMetrics().ids, builtinMetrics.map((d) => d.id));
+  assert.deepEqual(createMetrics([builtinMetrics[4], builtinMetrics[0]]).ids, [builtinMetrics[4].id, builtinMetrics[0].id]);
+});
+
+test("asking a registry for a kind it does not hold is an error", () => {
+  assert.throws(() => createMetrics().get("flying armbar" as Kind), /no submission metric "flying armbar"/);
 });

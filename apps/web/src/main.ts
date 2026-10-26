@@ -8,8 +8,6 @@ import {
 } from "@bjj3d/ui";
 import { currentLang, kindName, langName, LANGS, measureLabel, pick, risk, setLang, t } from "./i18n.ts";
 
-const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
-
 /** Reloads the page. An object so tests can replace it: location.reload itself cannot be. */
 export const page = { reload: location.reload.bind(location) };
 

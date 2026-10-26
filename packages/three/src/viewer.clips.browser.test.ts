@@ -145,3 +145,20 @@ test("the editor's preview holds a frame without playing", async () => {
   expect(v.playing).toBe(false);
   expect(inside(v).target).toBeNull();
 });
+
+test("the poses on screen are the clip's, for the editor to start from", async () => {
+  const db = await loadDb();
+  const v = makeViewer();
+  const c = clip(db, ARMBAR);
+  v.show(c);
+  expect(v.currentPoses).toEqual(c.poses);
+});
+
+test("the kind whose joint is lit: the transition's, none for a position", async () => {
+  const db = await loadDb();
+  const v = makeViewer();
+  v.show(clip(db, ARMBAR));
+  expect(v.currentKind).toBe(db.file.transitions[ARMBAR.i].kind);
+  v.show(clip(db, { type: "p", i: 57 }));
+  expect(v.currentKind).toBeNull();
+});

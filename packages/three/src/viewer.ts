@@ -637,7 +637,7 @@ export class Viewer {
     this.renderer.render(this.scene, this.camera);
   }
 
-  private updateCamera(l: Landmarks[], impact = 0) {
+  private updateCamera(l: Landmarks[], impact: number) {
     const c = l[0].MidHip.clone().add(l[1].MidHip).multiplyScalar(0.5);
     switch (this.cameraMode) {
       case "directed": {

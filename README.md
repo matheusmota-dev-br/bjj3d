@@ -232,6 +232,11 @@ pnpm validate   # regenerates docs/validation.md
   (`BJJ3D_ADDITIONS`, `BJJ3D_GRAPH`); the suite fails if `data/grapplemap/bjj3d.txt` or
   `apps/web/public/graph.json` changed.
 
+On GitHub, every pull request and push to main runs typecheck and the unit tests. The
+end-to-end suite, the validation report and the catalog build run only when started by hand
+(Actions → ci → Run workflow, or `gh workflow run ci`): the runners have no GPU, so the app
+draws in software WebGL and that suite takes many minutes.
+
 ## Sources and license
 
 Motion: [GrappleMap](https://github.com/Eelis/GrappleMap) by Eelis van der Weegen and
